@@ -10,6 +10,9 @@ import data
 from util.iter_counter import IterationCounter
 from util.visualizer import Visualizer
 from trainers.pix2pix_trainer import Pix2PixTrainer
+#import torch
+
+#torch.backends.cudnn.benchmark = False
 
 # parse options
 opt = TrainOptions().parse()

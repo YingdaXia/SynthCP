@@ -41,6 +41,8 @@ class BaseOptions():
 
         # for setting inputs
         parser.add_argument('--dataroot', type=str, default='./datasets/cityscapes/')
+        parser.add_argument('--label_dir', type=str, default='./datasets/cityscapes/')
+        parser.add_argument('--image_dir', type=str, default='./datasets/cityscapes/')
         parser.add_argument('--dataset_mode', type=str, default='coco')
         parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
         parser.add_argument('--no_flip', action='store_true', help='if specified, do not flip the images for data argumentation')
