@@ -133,11 +133,13 @@ class Pix2PixModel(torch.nn.Module):
     def compute_generator_loss(self, input_semantics, real_image):
         G_losses = {}
 
+        #fake_image, KLD_loss = self.generate_fake(
+        #    input_semantics, real_image, compute_kld_loss=self.opt.use_vae)
         fake_image, KLD_loss = self.generate_fake(
-            input_semantics, real_image, compute_kld_loss=self.opt.use_vae)
+            input_semantics, real_image, compute_kld_loss=False)
 
-        if self.opt.use_vae:
-            G_losses['KLD'] = KLD_loss
+        #if self.opt.use_vae:
+        #    G_losses['KLD'] = KLD_loss
 
         pred_fake, pred_real = self.discriminate(
             input_semantics, fake_image, real_image)
@@ -182,8 +184,9 @@ class Pix2PixModel(torch.nn.Module):
 
     def encode_z(self, real_image):
         mu, logvar = self.netE(real_image)
-        z = self.reparameterize(mu, logvar)
-        return z, mu, logvar
+        #z = self.reparameterize(mu, logvar)
+        #z = torch.cat((mu, logvar), dim=1)
+        return mu, mu, logvar
 
     def generate_fake(self, input_semantics, real_image, compute_kld_loss=False):
         z = None
