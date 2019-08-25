@@ -16,18 +16,16 @@ import pickle
 class BaseOptions():
     def __init__(self):
         self.initialized = False
+        self.isTrain = True
 
     def initialize(self, parser):
         # experiment specifics
-        parser.add_argument('--name', type=str, default='label2coco', help='name of the experiment. It decides where to store samples and models')
+        parser.add_argument('--name', type=str, default='cityscapes_from_gta5', help='name of the experiment. It decides where to store samples and models')
 
         parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
-        parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
-        parser.add_argument('--model', type=str, default='pix2pix', help='which model to use')
-        parser.add_argument('--norm_G', type=str, default='spectralinstance', help='instance normalization or batch normalization')
-        parser.add_argument('--norm_D', type=str, default='spectralinstance', help='instance normalization or batch normalization')
-        parser.add_argument('--norm_E', type=str, default='spectralinstance', help='instance normalization or batch normalization')
+        parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints/fcn8s/', help='models are saved here')
         parser.add_argument('--phase', type=str, default='train', help='train, val, test, etc')
+        parser.add_argument('--model', type=str, default='fcn8s', help='which model to use')
 
         # input/output sizes
         parser.add_argument('--batchSize', type=int, default=1, help='input batch size')
@@ -40,33 +38,27 @@ class BaseOptions():
         parser.add_argument('--output_nc', type=int, default=3, help='# of output image channels')
 
         # for setting inputs
-        parser.add_argument('--dataroot', type=str, default='/data/cityscapes/')
-        parser.add_argument('--label_dir', type=str, default='/data/cityscapes/')
-        parser.add_argument('--image_dir', type=str, default='/data/cityscapes/')
-        parser.add_argument('--dataset_mode', type=str, default='coco')
+        parser.add_argument('--dataroot', type=str, default='/data/yzhang/gta5_deeplab/')
+        parser.add_argument('--label_dir', type=str, default='/data/yzhang/gta5_deeplab/images/')
+        parser.add_argument('--image_dir', type=str, default='/data/yzhang/gta5_deeplab/labels/')
+        parser.add_argument('--dataset_mode', type=str, default='custom')
         parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
         parser.add_argument('--no_flip', action='store_true', help='if specified, do not flip the images for data argumentation')
-        parser.add_argument('--nThreads', default=8, type=int, help='# threads for loading data')
+        parser.add_argument('--nThreads', default=4, type=int, help='# threads for loading data')
         parser.add_argument('--max_dataset_size', type=int, default=sys.maxsize, help='Maximum number of samples allowed per dataset. If the dataset directory contains more than max_dataset_size, only a subset is loaded.')
         parser.add_argument('--load_from_opt_file', action='store_true', help='load the options from checkpoints and use that as default')
         parser.add_argument('--cache_filelist_write', action='store_true', help='saves the current filelist into a text file, so that it loads faster')
         parser.add_argument('--cache_filelist_read', action='store_true', help='reads from the file list cache')
 
-        # for displays
-        parser.add_argument('--display_winsize', type=int, default=400, help='display window size')
+        parser.add_argument('--niter', type=int, default=100000, help='# of iter at starting learning rate. This is NOT the total #epochs. Totla #epochs is niter + niter_decay')
+        parser.add_argument('--niter_decay', type=int, default=0, help='# of iter to linearly decay learning rate to zero')
+        parser.add_argument('--snapshot', type=int, default=50000, help='# of iter to save snapshot')
+        parser.add_argument('--lr', type=float, default=1e-4, help='initial learning rate for adam')
 
-        # for generator
-        parser.add_argument('--netG', type=str, default='spade', help='selects model to use for netG (pix2pixhd | spade)')
-        parser.add_argument('--ngf', type=int, default=64, help='# of gen filters in first conv layer')
-        parser.add_argument('--init_type', type=str, default='xavier', help='network initialization [normal|xavier|kaiming|orthogonal]')
-        parser.add_argument('--init_variance', type=float, default=0.02, help='variance of the initialization distribution')
-        parser.add_argument('--z_dim', type=int, default=256,
-                            help="dimension of the latent z vector")
-
-        # for instance-wise features
         parser.add_argument('--no_instance', action='store_true', help='if specified, do *not* add instance map as input')
         parser.add_argument('--nef', type=int, default=16, help='# of encoder filters in the first conv layer')
         parser.add_argument('--use_vae', action='store_true', help='enable training with an image encoder.')
+        parser.add_argument('--vgg_norm', action='store_true', help='vgg_norm')
 
         self.initialized = True
         return parser
@@ -83,8 +75,8 @@ class BaseOptions():
 
         # modify model-related parser options
         model_name = opt.model
-        model_option_setter = models.get_option_setter(model_name)
-        parser = model_option_setter(parser, self.isTrain)
+        #model_option_setter = models.get_option_setter(model_name)
+        #parser = model_option_setter(parser, self.isTrain)
 
         # modify dataset-related parser options
         dataset_mode = opt.dataset_mode
@@ -97,7 +89,6 @@ class BaseOptions():
         # The previous default options will be overwritten
         if opt.load_from_opt_file:
             parser = self.update_options_from_file(parser, opt)
-
         opt = parser.parse_args()
         self.parser = parser
         return opt
@@ -158,9 +149,7 @@ class BaseOptions():
 
         # Set semantic_nc based on the option.
         # This will be convenient in many places
-        opt.semantic_nc = opt.label_nc + \
-            (1 if opt.contain_dontcare_label else 0) + \
-            (0 if opt.no_instance else 1)
+        opt.semantic_nc = opt.label_nc + (1 if opt.contain_dontcare_label else 0)
 
         # set gpu ids
         str_ids = opt.gpu_ids.split(',')

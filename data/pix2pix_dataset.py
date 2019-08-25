@@ -59,6 +59,7 @@ class Pix2pixDataset(BaseDataset):
         label_path = self.label_paths[index]
         label = Image.open(label_path)
         params = get_params(self.opt, label.size)
+        
         transform_label = get_transform(self.opt, params, method=Image.NEAREST, normalize=False)
         label_tensor = transform_label(label) * 255.0
         label_tensor[label_tensor == 255] = self.opt.label_nc  # 'unknown' is opt.label_nc
@@ -73,6 +74,10 @@ class Pix2pixDataset(BaseDataset):
 
         transform_image = get_transform(self.opt, params)
         image_tensor = transform_image(image)
+
+        # for VGG segmentation network
+        transform_image_vgg = get_transform(self.opt, params, for_VGG=True)
+        image_tensor_vgg = transform_image_vgg(image)
 
         # if using instance maps
         if self.opt.no_instance:
@@ -89,6 +94,7 @@ class Pix2pixDataset(BaseDataset):
         input_dict = {'label': label_tensor,
                       'instance': instance_tensor,
                       'image': image_tensor,
+                      'image_vgg':image_tensor_vgg,
                       'path': image_path,
                       }
 

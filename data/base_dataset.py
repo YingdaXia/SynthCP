@@ -44,7 +44,7 @@ def get_params(opt, size):
     return {'crop_pos': (x, y), 'flip': flip}
 
 
-def get_transform(opt, params, method=Image.BICUBIC, normalize=True, toTensor=True):
+def get_transform(opt, params, method=Image.BICUBIC, normalize=True, toTensor=True, for_VGG=False):
     transform_list = []
     if 'resize' in opt.preprocess_mode:
         osize = [opt.load_size, opt.load_size]
@@ -73,8 +73,13 @@ def get_transform(opt, params, method=Image.BICUBIC, normalize=True, toTensor=Tr
         transform_list += [transforms.ToTensor()]
 
     if normalize:
-        transform_list += [transforms.Normalize((0.5, 0.5, 0.5),
-                                                (0.5, 0.5, 0.5))]
+        if for_VGG:
+            transform_list += [transforms.Normalize(
+            mean=[0.485, 0.458, 0.408],
+            std=[0.00392156862745098] * 3),]
+        else:
+            transform_list += [transforms.Normalize((0.5, 0.5, 0.5),
+                                                    (0.5, 0.5, 0.5))]
     return transforms.Compose(transform_list)
 
 
