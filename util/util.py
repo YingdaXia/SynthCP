@@ -202,8 +202,15 @@ def save_network(net, label, epoch, opt):
 
 def load_network(net, label, epoch, opt):
     save_filename = '%s_net_%s.pth' % (epoch, label)
-    save_dir = os.path.join(opt.checkpoints_dir, opt.name)
+    if opt.init_name == '' or opt.continue_train:
+        save_dir = os.path.join(opt.checkpoints_dir, opt.name)
+    else: # init from pretrained image auto-encoder
+        print('Load pretrained image auto-encoder!')
+        save_dir = os.path.join(opt.checkpoints_dir, opt.init_name)
     save_path = os.path.join(save_dir, save_filename)
+    if label == 'S' and not opt.continue_train:
+        print('Load pretrained segmentation model from %s' % opt.fcn_pretrained)
+        save_path = opt.fcn_pretrained
     weights = torch.load(save_path)
     net.load_state_dict(weights)
     return net

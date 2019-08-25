@@ -94,7 +94,7 @@ class Pix2pixDataset(BaseDataset):
         input_dict = {'label': label_tensor,
                       'instance': instance_tensor,
                       'image': image_tensor,
-                      'image_vgg':image_tensor_vgg,
+                      'image_seg':image_tensor_vgg,
                       'path': image_path,
                       }
 

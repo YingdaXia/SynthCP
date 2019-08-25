@@ -24,6 +24,9 @@ class Pix2PixModel(torch.nn.Module):
 
         self.netG, self.netD, self.netE = self.initialize_networks(opt)
 
+        if opt.joint_train:
+            self.netS = self.initialize_fcn(opt)
+
         # set loss functions
         if opt.isTrain:
             self.criterionGAN = networks.GANLoss(
@@ -39,11 +42,22 @@ class Pix2PixModel(torch.nn.Module):
     # can't parallelize custom functions, we branch to different
     # routines based on |mode|.
     def forward(self, data, mode):
-        input_semantics, real_image = self.preprocess_input(data)
+        if self.opt.joint_train:
+            input_semantics, real_image, image_seg = self.preprocess_input(data, is_joint_train=True)
+        else:
+            input_semantics, real_image = self.preprocess_input(data)
 
         if mode == 'generator':
+            if self.opt.joint_train:
+                pred_seg = self.netS(image_seg)
+                generator_input = torch.nn.Softmax(dim=1)(pred_seg)
+                loss_seg = torch.nn.CrossEntropyLoss()(pred_seg, data['label'].cuda().squeeze(1).long())
+            else:
+                generator_input = input_semantics
             g_loss, generated = self.compute_generator_loss(
-                input_semantics, real_image)
+                generator_input, real_image)
+            if self.opt.joint_train:
+                g_loss['Seg'] = loss_seg
             return g_loss, generated
         elif mode == 'discriminator':
             d_loss = self.compute_discriminator_loss(
@@ -63,6 +77,8 @@ class Pix2PixModel(torch.nn.Module):
         G_params = list(self.netG.parameters())
         if opt.use_vae:
             G_params += list(self.netE.parameters())
+        if opt.joint_train:
+            G_params += list(self.netS.parameters())
         if opt.isTrain:
             D_params = list(self.netD.parameters())
 
@@ -83,6 +99,8 @@ class Pix2PixModel(torch.nn.Module):
         util.save_network(self.netD, 'D', epoch, self.opt)
         if self.opt.use_vae:
             util.save_network(self.netE, 'E', epoch, self.opt)
+        if self.opt.joint_train:
+            util.save_network(self.netS, 'S', epoch, self.opt)
 
     ############################################################################
     # Private helper methods
@@ -102,17 +120,28 @@ class Pix2PixModel(torch.nn.Module):
 
         return netG, netD, netE
 
+    def initialize_fcn(self, opt):
+        from models.fcn8 import VGG16_FCN8s
+        net = VGG16_FCN8s(num_cls=opt.label_nc, pretrained=False)
+
+        if not opt.isTrain or opt.continue_train:
+            net = util.load_network(net, 'S', opt.which_epoch, opt)
+        return net
+            
+
     # preprocess the input, such as moving the tensors to GPUs and
     # transforming the label map to one-hot encoding
     # |data|: dictionary of the input data
 
-    def preprocess_input(self, data):
+    def preprocess_input(self, data, is_joint_train = False):
         # move to GPU and change data types
         data['label'] = data['label'].long()
         if self.use_gpu():
             data['label'] = data['label'].cuda()
             data['instance'] = data['instance'].cuda()
             data['image'] = data['image'].cuda()
+            if is_joint_train:
+                data['image_seg'] = data['image_seg'].cuda()
 
         # create one-hot label map
         label_map = data['label']
@@ -128,7 +157,10 @@ class Pix2PixModel(torch.nn.Module):
             instance_edge_map = self.get_edges(inst_map)
             input_semantics = torch.cat((input_semantics, instance_edge_map), dim=1)
 
-        return input_semantics, data['image']
+        if is_joint_train:
+            return input_semantics, data['image'], data['image_seg']
+        else:
+            return input_semantics, data['image']
 
     def compute_generator_loss(self, input_semantics, real_image):
         G_losses = {}
