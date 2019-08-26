@@ -21,7 +21,8 @@ opt = TrainOptions().parse()
 print(' '.join(sys.argv))
 
 # load the dataset
-dataloader = data.create_dataloader(opt)
+#dataloader = data.create_dataloader(opt)
+dataloader = data.create_double_dataloader(opt)
 
 # create trainer for our model
 trainer = Pix2PixTrainer(opt)
@@ -34,16 +35,18 @@ visualizer = Visualizer(opt)
 
 for epoch in iter_counter.training_epochs():
     iter_counter.record_epoch_start(epoch)
-    for i, data_i in enumerate(dataloader, start=iter_counter.epoch_iter):
+    for i, (data_s, data_t) in enumerate(dataloader, start=iter_counter.epoch_iter):
         iter_counter.record_one_iteration()
 
         # Training
         # train generator
         if i % opt.D_steps_per_G == 0:
-            trainer.run_generator_one_step(data_i)
+            trainer.run_generator_one_step(data_s)
+            trainer.run_generator_one_step(data_t)
 
         # train discriminator
-        trainer.run_discriminator_one_step(data_i)
+        trainer.run_discriminator_one_step(data_s)
+        trainer.run_discriminator_one_step(data_t)
 
         # Visualizations
         if iter_counter.needs_printing():
@@ -53,9 +56,9 @@ for epoch in iter_counter.training_epochs():
             visualizer.plot_current_errors(losses, iter_counter.total_steps_so_far)
 
         if iter_counter.needs_displaying():
-            visuals = OrderedDict([('input_label', data_i['label']),
+            visuals = OrderedDict([('source_t', data_s['label']),
                                    ('synthesized_image', trainer.get_latest_generated()),
-                                   ('real_image', data_i['image'])])
+                                   ('real_image', data_s['image'])])
             visualizer.display_current_results(visuals, epoch, iter_counter.total_steps_so_far)
 
         if iter_counter.needs_saving():

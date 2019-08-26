@@ -51,17 +51,26 @@ class Pix2PixModel(torch.nn.Module):
             if self.opt.joint_train:
                 pred_seg = self.netS(image_seg)
                 generator_input = torch.nn.Softmax(dim=1)(pred_seg)
-                loss_seg = torch.nn.CrossEntropyLoss()(pred_seg, data['label'].cuda().squeeze(1).long())
+                if 'label' in data: # only apply segmentation loss to source data
+                    loss_seg = torch.nn.CrossEntropyLoss()(pred_seg, data['label'].cuda().squeeze(1).long())
             else:
                 generator_input = input_semantics
             g_loss, generated = self.compute_generator_loss(
                 generator_input, real_image)
-            if self.opt.joint_train:
+            if self.opt.joint_train and 'label' in data:
                 g_loss['Seg'] = loss_seg
             return g_loss, generated
         elif mode == 'discriminator':
+            if self.opt.joint_train:
+                with torch.no_grad():
+                    pred_seg = self.netS(image_seg)
+                    generator_input = torch.nn.Softmax(dim=1)(pred_seg)
+                generator_input = generator_input.detach()
+                generator_input.requires_grad_()
+            else:
+                generator_input = input_semantics
             d_loss = self.compute_discriminator_loss(
-                input_semantics, real_image)
+                generator_input, real_image)
             return d_loss
         elif mode == 'encode_only':
             z, mu, logvar = self.encode_z(real_image)
@@ -111,7 +120,7 @@ class Pix2PixModel(torch.nn.Module):
         netD = networks.define_D(opt) if opt.isTrain else None
         netE = networks.define_E(opt) if opt.use_vae else None
 
-        if not opt.isTrain or opt.continue_train:
+        if not opt.isTrain or opt.continue_train or opt.joint_train:
             netG = util.load_network(netG, 'G', opt.which_epoch, opt)
             if opt.isTrain:
                 netD = util.load_network(netD, 'D', opt.which_epoch, opt)
@@ -135,21 +144,24 @@ class Pix2PixModel(torch.nn.Module):
 
     def preprocess_input(self, data, is_joint_train = False):
         # move to GPU and change data types
-        data['label'] = data['label'].long()
         if self.use_gpu():
-            data['label'] = data['label'].cuda()
+            if 'label' in data:
+                data['label'] = data['label'].long()
+                data['label'] = data['label'].cuda()
             data['instance'] = data['instance'].cuda()
             data['image'] = data['image'].cuda()
             if is_joint_train:
                 data['image_seg'] = data['image_seg'].cuda()
 
         # create one-hot label map
-        label_map = data['label']
-        bs, _, h, w = label_map.size()
-        nc = self.opt.label_nc + 1 if self.opt.contain_dontcare_label \
-            else self.opt.label_nc
-        input_label = self.FloatTensor(bs, nc, h, w).zero_()
-        input_semantics = input_label.scatter_(1, label_map, 1.0)
+        input_semantics = None
+        if 'label' in data:
+            label_map = data['label']
+            bs, _, h, w = label_map.size()
+            nc = self.opt.label_nc + 1 if self.opt.contain_dontcare_label \
+                else self.opt.label_nc
+            input_label = self.FloatTensor(bs, nc, h, w).zero_()
+            input_semantics = input_label.scatter_(1, label_map, 1.0)
 
         # concatenate instance map if it exists
         if not self.opt.no_instance:

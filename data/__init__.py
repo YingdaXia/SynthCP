@@ -6,6 +6,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 import importlib
 import torch.utils.data
 from data.base_dataset import BaseDataset
+from data.custom_dataset import AddaDataset
 
 
 def find_dataset_using_name(dataset_name):
@@ -46,6 +47,29 @@ def create_dataloader(opt):
           (type(instance).__name__, len(instance)))
     dataloader = torch.utils.data.DataLoader(
         instance,
+        batch_size=opt.batchSize,
+        shuffle=not opt.serial_batches,
+        num_workers=int(opt.nThreads),
+        drop_last=opt.isTrain
+    )
+    return dataloader
+
+def create_double_dataloader(opt):
+    ds = find_dataset_using_name(opt.dataset_mode_source)
+    dataset_source = ds()
+    dataset_source.initialize(opt, adda_mode='source')
+    print("source dataset [%s] of size %d was created" %
+          (type(dataset_source).__name__, len(dataset_source)))
+    
+    d2 = find_dataset_using_name(opt.dataset_mode_target)
+    dataset_target = d2()
+    dataset_target.initialize(opt, adda_mode='target')
+    print("target dataset [%s] of size %d was created" %
+          (type(dataset_target).__name__, len(dataset_target)))
+
+    dataset = AddaDataset(dataset_source, dataset_target)
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
         batch_size=opt.batchSize,
         shuffle=not opt.serial_batches,
         num_workers=int(opt.nThreads),

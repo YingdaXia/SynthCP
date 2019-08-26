@@ -17,15 +17,20 @@ class CityscapesDataset(Pix2pixDataset):
         parser.set_defaults(load_size=512)
         parser.set_defaults(crop_size=512)
         parser.set_defaults(display_winsize=512)
-        parser.set_defaults(label_nc=35)
+        parser.set_defaults(label_nc=19)
         parser.set_defaults(aspect_ratio=2.0)
         opt, _ = parser.parse_known_args()
         if hasattr(opt, 'num_upsampling_layers'):
             parser.set_defaults(num_upsampling_layers='more')
         return parser
 
-    def get_paths(self, opt):
-        root = opt.dataroot
+    def get_paths(self, opt, adda_mode = 'normal'):
+        if adda_mode == 'source':
+            root = opt.dataroot_source
+        elif adda_mode == 'target':
+            root = opt.dataroot_target
+        else:
+            root = opt.dataroot
         phase = 'val' if opt.phase == 'test' else 'train'
 
         label_dir = os.path.join(root, 'gtFine', phase)

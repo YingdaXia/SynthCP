@@ -16,10 +16,11 @@ class Pix2pixDataset(BaseDataset):
                             help='If specified, skip sanity check of correct label-image file pairing')
         return parser
 
-    def initialize(self, opt):
+    def initialize(self, opt, adda_mode = 'normal'):
         self.opt = opt
+        self.adda_mode = adda_mode
 
-        label_paths, image_paths, instance_paths = self.get_paths(opt)
+        label_paths, image_paths, instance_paths = self.get_paths(opt, adda_mode = adda_mode)
 
         util.natural_sort(label_paths)
         util.natural_sort(image_paths)
@@ -42,7 +43,7 @@ class Pix2pixDataset(BaseDataset):
         size = len(self.label_paths)
         self.dataset_size = size
 
-    def get_paths(self, opt):
+    def get_paths(self, opt, adda_mode = 'normal'):
         label_paths = []
         image_paths = []
         instance_paths = []
@@ -91,12 +92,20 @@ class Pix2pixDataset(BaseDataset):
             else:
                 instance_tensor = transform_label(instance)
 
-        input_dict = {'label': label_tensor,
-                      'instance': instance_tensor,
-                      'image': image_tensor,
-                      'image_seg':image_tensor_vgg,
-                      'path': image_path,
-                      }
+        if self.adda_mode == 'target': # target domain should not contain ground truth!
+            input_dict = {
+                        'instance': instance_tensor,
+                        'image': image_tensor,
+                        'image_seg':image_tensor_vgg,
+                        'path': image_path,
+                        }
+        else:
+            input_dict = {'label': label_tensor,
+                        'instance': instance_tensor,
+                        'image': image_tensor,
+                        'image_seg':image_tensor_vgg,
+                        'path': image_path,
+                        }
 
         # Give subclasses a chance to modify the final output
         self.postprocess(input_dict)
