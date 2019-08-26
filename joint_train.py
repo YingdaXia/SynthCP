@@ -56,9 +56,9 @@ for epoch in iter_counter.training_epochs():
             visualizer.plot_current_errors(losses, iter_counter.total_steps_so_far)
 
         if iter_counter.needs_displaying():
-            visuals = OrderedDict([('source_t', data_s['label']),
+            visuals = OrderedDict([('pred_seg', trainer.get_latest_seg()),
                                    ('synthesized_image', trainer.get_latest_generated()),
-                                   ('real_image', data_s['image'])])
+                                   ('real_image', data_t['image'])])
             visualizer.display_current_results(visuals, epoch, iter_counter.total_steps_so_far)
 
         if iter_counter.needs_saving():

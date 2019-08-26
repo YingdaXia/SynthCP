@@ -59,7 +59,7 @@ class Pix2PixModel(torch.nn.Module):
                 generator_input, real_image)
             if self.opt.joint_train and 'label' in data:
                 g_loss['Seg'] = loss_seg
-            return g_loss, generated
+            return g_loss, generated, generator_input # also return segmentation result for visualization
         elif mode == 'discriminator':
             if self.opt.joint_train:
                 with torch.no_grad():
@@ -133,7 +133,7 @@ class Pix2PixModel(torch.nn.Module):
         from models.fcn8 import VGG16_FCN8s
         net = VGG16_FCN8s(num_cls=opt.label_nc, pretrained=False)
 
-        if not opt.isTrain or opt.continue_train:
+        if not opt.isTrain or opt.continue_train or opt.joint_train:
             net = util.load_network(net, 'S', opt.which_epoch, opt)
         return net
             

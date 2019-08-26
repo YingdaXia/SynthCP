@@ -25,6 +25,7 @@ class Pix2PixTrainer():
             self.pix2pix_model_on_one_gpu = self.pix2pix_model
 
         self.generated = None
+        self.pred_seg = None
         if opt.isTrain:
             self.optimizer_G, self.optimizer_D = \
                 self.pix2pix_model_on_one_gpu.create_optimizers(opt)
@@ -32,12 +33,13 @@ class Pix2PixTrainer():
 
     def run_generator_one_step(self, data):
         self.optimizer_G.zero_grad()
-        g_losses, generated = self.pix2pix_model(data, mode='generator')
+        g_losses, generated, pred_seg = self.pix2pix_model(data, mode='generator')
         g_loss = sum(g_losses.values()).mean()
         g_loss.backward()
         self.optimizer_G.step()
         self.g_losses = g_losses
         self.generated = generated
+        self.pred_seg = pred_seg.argmax(dim=1, keepdim=True)
 
     def run_discriminator_one_step(self, data):
         self.optimizer_D.zero_grad()
@@ -52,6 +54,9 @@ class Pix2PixTrainer():
 
     def get_latest_generated(self):
         return self.generated
+    
+    def get_latest_seg(self):
+        return self.pred_seg
 
     def update_learning_rate(self, epoch):
         self.update_learning_rate(epoch)
