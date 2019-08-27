@@ -83,7 +83,9 @@ class Pix2PixModel(torch.nn.Module):
             raise ValueError("|mode| is invalid")
 
     def create_optimizers(self, opt):
-        G_params = list(self.netG.parameters())
+        G_params = []
+        if not opt.no_G_grad:
+            G_params += list(self.netG.parameters())
         if opt.use_vae:
             G_params += list(self.netE.parameters())
         if opt.joint_train:

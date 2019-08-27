@@ -44,6 +44,7 @@ class TrainOptions(BaseOptions):
         # for FCN and joint training
         parser.add_argument('--joint_train', action='store_true', help='specify to joint train seg and SPADE')
         parser.add_argument('--fcn_pretrained', type=str, default='', help='pretrained_fcn_path')
+        parser.add_argument('--no_G_grad', action='store_true', help='if specified, do *not* update generator')
 
         self.isTrain = True
         return parser
