@@ -52,7 +52,7 @@ class Pix2PixModel(torch.nn.Module):
                 pred_seg = self.netS(image_seg)
                 generator_input = torch.nn.Softmax(dim=1)(pred_seg)
                 if 'label' in data: # only apply segmentation loss to source data
-                    loss_seg = torch.nn.CrossEntropyLoss()(pred_seg, data['label'].cuda().squeeze(1).long())
+                    loss_seg = torch.nn.CrossEntropyLoss(ignore_index=self.opt.label_nc)(pred_seg, data['label'].cuda().squeeze(1).long())
             else:
                 generator_input = input_semantics
             g_loss, generated = self.compute_generator_loss(
@@ -83,7 +83,9 @@ class Pix2PixModel(torch.nn.Module):
             raise ValueError("|mode| is invalid")
 
     def create_optimizers(self, opt):
-        G_params = list(self.netG.parameters())
+        G_params = []
+        if not opt.no_G_grad:
+            G_params += list(self.netG.parameters())
         if opt.use_vae:
             G_params += list(self.netE.parameters())
         if opt.joint_train:
@@ -135,6 +137,7 @@ class Pix2PixModel(torch.nn.Module):
 
         if not opt.isTrain or opt.continue_train or opt.joint_train:
             net = util.load_network(net, 'S', opt.which_epoch, opt)
+        net.eval()
         return net
             
 

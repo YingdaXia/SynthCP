@@ -1,13 +1,15 @@
-python joint_train.py --name cityscapes_from_GTA5_joint_train \
-                --init_name cityscapes_from_GTA5_image_encoder \
+python joint_train.py --name cityscapes_from_GTA5_joint_train_noGgrad \
+                --init_name cityscapes_from_GTA5_dim8_c19 \
                 --dataset_mode_source custom \
                 --label_dir_source /data/yzhang/gta5_deeplab/labels \
                 --image_dir_source /data/yzhang/gta5_deeplab/images \
                 --dataset_mode_target cityscapes \
                 --dataroot_target /data/yzhang/cityscapes \
-                --label_nc 35 --no_instance \
+                --label_nc 19 --no_instance \
+                --z_dim 8 \
                 --use_vae \
                 --batchSize 1 \
                 --joint_train \
-                --fcn_pretrained checkpoints/fcn8s/cityscapes_from_GTA5-iter50000.pth \
-                --gpu_ids 6
+                --fcn_pretrained checkpoints/fcn8s/cityscapes_from_GTA5_c19-iter100000.pth \
+                --no_G_grad \
+                --gpu_ids 3
