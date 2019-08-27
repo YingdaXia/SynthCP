@@ -60,6 +60,7 @@ class BaseOptions():
         parser.add_argument('--use_vae', action='store_true', help='enable training with an image encoder.')
         parser.add_argument('--vgg_norm', action='store_true', help='vgg_norm')
 
+        parser.add_argument('--model_path', type=str, default='')
         self.initialized = True
         return parser
 

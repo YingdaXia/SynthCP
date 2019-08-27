@@ -39,5 +39,9 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--netD', type=str, default='multiscale', help='(n_layers|multiscale|image)')
         parser.add_argument('--no_TTUR', action='store_true', help='Use TTUR training scheme')
         parser.add_argument('--lambda_kld', type=float, default=0.05)
+
+        # for FCN and joint training
+        parser.add_argument('--joint_train', action='store_true', help='specify to joint train seg and SPADE')
+        parser.add_argument('--fcn_pretrained', type=str, default='', help='pretrained_fcn_path')
         self.isTrain = True
         return parser

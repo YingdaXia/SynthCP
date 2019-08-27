@@ -2,6 +2,7 @@ import os.path
 import os.path as osp
 import sys
 from collections import deque
+from tqdm import *
 
 import click
 import numpy as np
@@ -19,24 +20,34 @@ def to_tensor_raw(im):
     return torch.from_numpy(np.array(im, np.int64, copy=False))
 
 
-def roundrobin_infinite(*loaders):
-    if not loaders:
-        return
-    iters = [iter(loader) for loader in loaders]
-    while True:
-        for i in range(len(iters)):
-            it = iters[i]
-            try:
-                yield next(it)
-            except StopIteration:
-                iters[i] = iter(loaders[i])
-                yield next(iters[i])
+def fmt_array(arr, fmt=','):
+    strs = ['{:.3f}'.format(x) for x in arr]
+    return fmt.join(strs)
 
-def supervised_loss(score, label, weights=None):
-    loss_fn_ = torch.nn.NLLLoss2d(weight=weights, size_average=True,
-            ignore_index=255)
-    loss = loss_fn_(F.log_softmax(score), label)
-    return loss
+def fast_hist(a, b, n):
+    k = (a >= 0) & (a < n)
+    return np.bincount(n * a[k].astype(int) + b[k], minlength=n**2).reshape(n, n)
+
+def result_stats(hist):
+    acc_overall = np.diag(hist).sum() / hist.sum() * 100
+    acc_percls = np.diag(hist) / (hist.sum(1) + 1e-8) * 100
+    iu = np.diag(hist) / (hist.sum(1) + hist.sum(0) - np.diag(hist) + 1e-8) * 100
+    freq = hist.sum(1) / hist.sum()
+    fwIU = (freq[freq > 0] * iu[freq > 0]).sum()
+    return acc_overall, acc_percls, iu, fwIU
+
+ignore_label = 255
+id2label = {-1: ignore_label, 0: ignore_label, 1: ignore_label, 2: ignore_label,
+            3: ignore_label, 4: ignore_label, 5: ignore_label, 6: ignore_label,
+            7: 0, 8: 1, 9: ignore_label, 10: ignore_label, 11: 2, 12: 3, 13: 4,
+            14: ignore_label, 15: ignore_label, 16: ignore_label, 17: 5,
+            18: ignore_label, 19: 6, 20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12, 26: 13, 27: 14,
+            28: 15, 29: ignore_label, 30: ignore_label, 31: 16, 32: 17, 33: 18}
+
+#id2label_gta2cs = {}
+#for k,v in id2label:
+#    if v != ignore_label:
+#        id2label_gta2cs[v] = k
 
 # parse options
 opt = BaseOptions().parse()
@@ -49,45 +60,34 @@ dataloader = data.create_dataloader(opt)
 
 net = VGG16_FCN8s(num_cls=opt.label_nc)
 net.cuda()
-transform = []
-target_transform = []
+net.eval()
 
-optimizer = torch.optim.SGD(net.parameters(), lr=opt.lr, momentum=0.99,
-                        weight_decay=0.0005)
+hist = np.zeros((19, 19))
+iterations = tqdm(enumerate(dataloader))
+for i, data_i in iterations:
+    # Clear out gradients
 
-iteration = 0
-losses = deque(maxlen=10)
-while True:
-    for i, data_i in enumerate(dataloader):
-        # Clear out gradients
-        optimizer.zero_grad()
+    # forward pass and compute loss
+    im = data_i['image_seg'].cuda()
+    label = data_i['label'].squeeze(1)
+    preds = net(im)
 
-        # load data/label
-        #im = make_variable(im, requires_grad=False)
-        #label = make_variable(label, requires_grad=False)
+    score = net(im).data
+    _, preds = torch.max(score, 1)
 
-        # forward pass and compute loss
-        im = data_i['image_vgg'].cuda()
-        label = data_i['label'].cuda().long().squeeze(1)
-        preds = net(im)
-        loss = torch.nn.CrossEntropyLoss()(preds, label)
+    for k,v in id2label.items():
+        preds[preds == k] = v
+        label[label == k] = v
 
-        # backward pass
-        loss.backward()
-        losses.append(loss.item())
-
-        # step gradients
-        optimizer.step()
-
-        # log results
-        if iteration % 10 == 0:
-            print('Iteration {}:\t{}'.format(iteration, np.mean(losses)))
-        iteration += 1
-
-        if iteration % opt.snapshot == 0:
-            torch.save(net.state_dict(), os.path.join(opt.checkpoints_dir, '{}-iter{}.pth'.format(opt.name, iteration)))
-        if iteration >= opt.niter:
-            print('Optimization complete.')
-            break
-    if iteration >= opt.niter:
-        break
+    hist += fast_hist(label.numpy().flatten(),
+            preds.cpu().numpy().flatten(),                                                                
+            19)
+    acc_overall, acc_percls, iu, fwIU = result_stats(hist)
+    iterations.set_postfix({'mIoU':' {:0.2f}  fwIoU: {:0.2f} pixel acc: {:0.2f} per cls acc: {:0.2f}'.format(
+        np.nanmean(iu), fwIU, acc_overall, np.nanmean(acc_percls))})
+print()
+#print(','.join(classes))
+print(fmt_array(iu))
+print(np.nanmean(iu), fwIU, acc_overall, np.nanmean(acc_percls))
+print(np.mean(iu))
+#print('Errors:', errs)

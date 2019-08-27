@@ -67,11 +67,11 @@ while True:
         #label = make_variable(label, requires_grad=False)
 
         # forward pass and compute loss
-        im = data_i['image_vgg'].cuda()
+        im = data_i['image_seg'].cuda()
         label = data_i['label'].cuda().long().squeeze(1)
         preds = net(im)
-        loss = torch.nn.CrossEntropyLoss()(preds, label)
-
+        loss = torch.nn.CrossEntropyLoss(ignore_index=opt.label_nc)(preds, label)
+        
         # backward pass
         loss.backward()
         losses.append(loss.item())

@@ -6,6 +6,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 from data.base_dataset import BaseDataset, get_params, get_transform
 from PIL import Image
 import util.util as util
+import torch
 import os
 
 
@@ -40,6 +41,11 @@ class Pix2pixDataset(BaseDataset):
         self.image_paths = image_paths
         self.instance_paths = instance_paths
 
+        self.id_to_trainid = {7: 0, 8: 1, 11: 2, 12: 3, 13: 4, 17: 5,
+                              19: 6, 20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
+                              26: 13, 27: 14, 28: 15, 31: 16, 32: 17, 33: 18}
+        self.ignore_label = 255
+
         size = len(self.label_paths)
         self.dataset_size = size
 
@@ -63,7 +69,7 @@ class Pix2pixDataset(BaseDataset):
         
         transform_label = get_transform(self.opt, params, method=Image.NEAREST, normalize=False)
         label_tensor = transform_label(label) * 255.0
-        label_tensor[label_tensor == 255] = self.opt.label_nc  # 'unknown' is opt.label_nc
+        
 
         # input image (real images)
         image_path = self.image_paths[index]
@@ -79,6 +85,13 @@ class Pix2pixDataset(BaseDataset):
         # for VGG segmentation network
         transform_image_vgg = get_transform(self.opt, params, for_VGG=True)
         image_tensor_vgg = transform_image_vgg(image)
+
+        # label remapping
+        label_tensor_transform = self.ignore_label * torch.ones_like(label_tensor)
+        for k,v in self.id_to_trainid.items():
+            label_tensor_transform[label_tensor == k] = v
+        label_tensor = label_tensor_transform
+        label_tensor[label_tensor == self.ignore_label] = self.opt.label_nc  # 'unknown' is opt.label_nc
 
         # if using instance maps
         if self.opt.no_instance:

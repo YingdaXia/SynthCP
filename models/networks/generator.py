@@ -31,7 +31,8 @@ class SPADEGenerator(BaseNetwork):
 
         if opt.use_vae:
             # In case of VAE, we will sample from random z vector
-            self.fc = nn.Linear(opt.z_dim, 16 * nf * self.sw * self.sh)
+            self.fc_ft = nn.Linear(opt.z_dim, 8 * nf * self.sw * self.sh)
+            self.fc_seg = nn.Conv2d(self.opt.semantic_nc, 8 * nf, 3, padding=1)
         else:
             # Otherwise, we make the network deterministic by starting with
             # downsampled segmentation map instead of random z
@@ -81,8 +82,11 @@ class SPADEGenerator(BaseNetwork):
             if z is None:
                 z = torch.randn(input.size(0), self.opt.z_dim,
                                 dtype=torch.float32, device=input.get_device())
-            x = self.fc(z)
-            x = x.view(-1, 16 * self.opt.ngf, self.sh, self.sw)
+            x1 = self.fc_ft(z)
+            x1 = x1.view(-1, 8 * self.opt.ngf, self.sh, self.sw)
+            x2 = F.interpolate(seg, size=(self.sh, self.sw))
+            x2 = self.fc_seg(x2)
+            x = torch.cat((x1,x2), dim=1)
         else:
             # we downsample segmap and run convolution
             x = F.interpolate(seg, size=(self.sh, self.sw))
