@@ -3,3 +3,5 @@ torchvision
 dominate>=2.3.1
 dill
 scikit-image
+click
+tqdm

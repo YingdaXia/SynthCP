@@ -15,6 +15,7 @@ from options.fcn_options import BaseOptions
 
 from models.fcn8 import VGG16_FCN8s
 import data
+import pdb
 
 def to_tensor_raw(im):
     return torch.from_numpy(np.array(im, np.int64, copy=False))
@@ -58,7 +59,8 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = VGG16_FCN8s(num_cls=opt.label_nc)
+net = VGG16_FCN8s(num_cls=opt.label_nc, pretrained=False)
+net.load_state_dict(torch.load(opt.model_path))
 net.cuda()
 net.eval()
 
@@ -74,13 +76,10 @@ for i, data_i in iterations:
 
     score = net(im).data
     _, preds = torch.max(score, 1)
-
-    for k,v in id2label.items():
-        preds[preds == k] = v
-        label[label == k] = v
+    #pdb.set_trace()
 
     hist += fast_hist(label.numpy().flatten(),
-            preds.cpu().numpy().flatten(),                                                                
+            preds.cpu().numpy().flatten(),
             19)
     acc_overall, acc_percls, iu, fwIU = result_stats(hist)
     iterations.set_postfix({'mIoU':' {:0.2f}  fwIoU: {:0.2f} pixel acc: {:0.2f} per cls acc: {:0.2f}'.format(
