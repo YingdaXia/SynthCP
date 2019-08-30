@@ -65,7 +65,8 @@ class BaseOptions():
         # for evaluating AE/SPADE
         parser.add_argument('--eval_losses_dir', type=str, default='.', help='dir to save evaluation losses')
         parser.add_argument('--eval_spade', type=bool, default=False, help='when eval SPADE, input should be gtFinePred')
-
+        parser.add_argument('--n_fold', type=int, default=1, help='n fold validation')
+        parser.add_argument('--fold', type=int, default=0, help='fold number')
         self.initialized = True
         return parser
 

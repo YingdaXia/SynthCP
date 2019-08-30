@@ -33,7 +33,10 @@ class CityscapesDataset(Pix2pixDataset):
             root = opt.dataroot
         phase = 'val' if opt.phase == 'test' else 'train'
 
-        label_dir = os.path.join(root, 'gtFinePred', phase)
+        if opt.eval_spade:
+            label_dir = os.path.join(root, 'gtFinePred', phase)
+        else:
+            label_dir = os.path.join(root, 'gtFine', phase)
         label_paths_all = make_dataset(label_dir, recursive=True)
         label_paths = [p for p in label_paths_all if p.endswith('_labelIds.png')]
 
@@ -46,8 +49,8 @@ class CityscapesDataset(Pix2pixDataset):
             instance_paths = []
 
         L = len(image_paths)
-        indices = int(fold*L/n_fold):int((fold+1)*L/n_fold)
-        return label_paths[indices], image_paths[indices], instance_paths[indices]
+        #return label_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)], image_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)], instance_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
+        return label_paths, image_paths, instance_paths
 
     def paths_match(self, path1, path2):
         name1 = os.path.basename(path1)
