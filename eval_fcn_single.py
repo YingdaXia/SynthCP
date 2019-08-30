@@ -75,7 +75,6 @@ for i, data_i in iterations:
     im = data_i['image_seg'].cuda()
     label = data_i['label'].squeeze(1)
     preds = net(im)
-
     score = net(im).data
     _, preds = torch.max(score, 1)
     #pdb.set_trace()

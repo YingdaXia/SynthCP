@@ -21,12 +21,19 @@ class Pix2pixDataset(BaseDataset):
         self.opt = opt
         self.adda_mode = adda_mode
 
-        label_paths, image_paths, instance_paths = self.get_paths(opt, adda_mode = adda_mode, n_fold=opt.n_fold, fold=opt.fold)
+        label_paths, image_paths, instance_paths = self.get_paths(opt, adda_mode = adda_mode)
+        n_fold=opt.n_fold
+        fold=opt.fold
+        L = len(image_paths)
 
         util.natural_sort(label_paths)
         util.natural_sort(image_paths)
         if not opt.no_instance:
             util.natural_sort(instance_paths)
+            instance_paths = instance_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
+
+        label_paths = label_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
+        image_paths = image_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
 
         label_paths = label_paths[:opt.max_dataset_size]
         image_paths = image_paths[:opt.max_dataset_size]
@@ -67,6 +74,7 @@ class Pix2pixDataset(BaseDataset):
         label = Image.open(label_path)
         params = get_params(self.opt, label.size)
 
+        print(self.opt.eval_spade)
         transform_label = get_transform(self.opt, params, method=Image.NEAREST, normalize=False, for_label=self.opt.eval_spade)
         label_tensor = transform_label(label) * 255.0
 

@@ -24,7 +24,7 @@ class CityscapesDataset(Pix2pixDataset):
             parser.set_defaults(num_upsampling_layers='more')
         return parser
 
-    def get_paths(self, opt, adda_mode = 'normal', n_fold=1, fold=0):
+    def get_paths(self, opt, adda_mode = 'normal'):
         if adda_mode == 'source':
             root = opt.dataroot_source
         elif adda_mode == 'target':
@@ -48,8 +48,6 @@ class CityscapesDataset(Pix2pixDataset):
         else:
             instance_paths = []
 
-        L = len(image_paths)
-        #return label_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)], image_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)], instance_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
         return label_paths, image_paths, instance_paths
 
     def paths_match(self, path1, path2):
