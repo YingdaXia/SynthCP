@@ -79,6 +79,10 @@ class BaseOptions():
         parser.add_argument('--nef', type=int, default=16, help='# of encoder filters in the first conv layer')
         parser.add_argument('--use_vae', action='store_true', help='enable training with an image encoder.')
 
+        # for evaluating AE/SPADE
+        parser.add_argument('--eval_losses_dir', type=str, default='.', help='dir to save evaluation losses')
+        parser.add_argument('--eval_spade', type=bool, default=False, help='when eval SPADE, input should be gtFinePred')
+
         self.initialized = True
         return parser
 

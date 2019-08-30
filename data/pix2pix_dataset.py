@@ -21,7 +21,7 @@ class Pix2pixDataset(BaseDataset):
         self.opt = opt
         self.adda_mode = adda_mode
 
-        label_paths, image_paths, instance_paths = self.get_paths(opt, adda_mode = adda_mode)
+        label_paths, image_paths, instance_paths = self.get_paths(opt, adda_mode = adda_mode, n_fold=opt.n_fold, fold=opt.fold)
 
         util.natural_sort(label_paths)
         util.natural_sort(image_paths)
@@ -66,10 +66,10 @@ class Pix2pixDataset(BaseDataset):
         label_path = self.label_paths[index]
         label = Image.open(label_path)
         params = get_params(self.opt, label.size)
-        
-        transform_label = get_transform(self.opt, params, method=Image.NEAREST, normalize=False)
+
+        transform_label = get_transform(self.opt, params, method=Image.NEAREST, normalize=False, for_label=self.opt.eval_spade)
         label_tensor = transform_label(label) * 255.0
-        
+
 
         # input image (real images)
         image_path = self.image_paths[index]
@@ -87,11 +87,12 @@ class Pix2pixDataset(BaseDataset):
         image_tensor_vgg = transform_image_vgg(image)
 
         # label remapping
-        label_tensor_transform = self.ignore_label * torch.ones_like(label_tensor)
-        for k,v in self.id_to_trainid.items():
-            label_tensor_transform[label_tensor == k] = v
-        label_tensor = label_tensor_transform
-        label_tensor[label_tensor == self.ignore_label] = self.opt.label_nc  # 'unknown' is opt.label_nc
+        if not self.opt.eval_spade:
+            label_tensor_transform = self.ignore_label * torch.ones_like(label_tensor)
+            for k,v in self.id_to_trainid.items():
+                label_tensor_transform[label_tensor == k] = v
+            label_tensor = label_tensor_transform
+            label_tensor[label_tensor == self.ignore_label] = self.opt.label_nc  # 'unknown' is opt.label_nc
 
         # if using instance maps
         if self.opt.no_instance:
@@ -118,6 +119,7 @@ class Pix2pixDataset(BaseDataset):
                         'image': image_tensor,
                         'image_seg':image_tensor_vgg,
                         'path': image_path,
+                        'label_path': label_path,
                         }
 
         # Give subclasses a chance to modify the final output

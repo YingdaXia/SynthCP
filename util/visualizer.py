@@ -9,6 +9,7 @@ import time
 from . import util
 from . import html
 import scipy.misc
+import json
 try:
     from StringIO import StringIO  # Python 2.7
 except ImportError:
@@ -21,6 +22,8 @@ class Visualizer():
         self.use_html = opt.isTrain and not opt.no_html
         self.win_size = opt.display_winsize
         self.name = opt.name
+        self.eval_losses_dir = os.path.join(opt.checkpoints_dir, opt.name, opt.eval_losses_dir)
+        self.eval_losses = []
         if self.tf_log:
             import tensorflow as tf
             self.tf = tf
@@ -43,7 +46,7 @@ class Visualizer():
 
         ## convert tensors to numpy arrays
         visuals = self.convert_visuals_to_numpy(visuals)
-                
+
         if self.tf_log: # show images in tensorboard output
             img_summaries = []
             for label, image_numpy in visuals.items():
@@ -73,7 +76,7 @@ class Visualizer():
                 else:
                     img_path = os.path.join(self.img_dir, 'epoch%.3d_iter%.3d_%s.png' % (epoch, step, label))
                     if len(image_numpy.shape) >= 4:
-                        image_numpy = image_numpy[0]                    
+                        image_numpy = image_numpy[0]
                     util.save_image(image_numpy, img_path)
 
             # update website
@@ -125,6 +128,18 @@ class Visualizer():
         with open(self.log_name, "a") as log_file:
             log_file.write('%s\n' % message)
 
+    def record_losses(self, i, errors):
+        for k, v in errors.items():
+            errors[k] = v.mean().float().cpu().numpy().tolist()
+
+        self.eval_losses.append(errors)
+
+    def dump_record_losses(self):
+
+        with open(os.path.join(self.eval_losses_dir, 'eval_losses.json'), 'w') as f:
+            json.dump(self.eval_losses, f)
+
+
     def convert_visuals_to_numpy(self, visuals):
         for key, t in visuals.items():
             tile = self.opt.batchSize > 8
@@ -136,9 +151,9 @@ class Visualizer():
         return visuals
 
     # save image to the disk
-    def save_images(self, webpage, visuals, image_path):        
-        visuals = self.convert_visuals_to_numpy(visuals)        
-        
+    def save_images(self, webpage, visuals, image_path):
+        visuals = self.convert_visuals_to_numpy(visuals)
+
         image_dir = webpage.get_image_dir()
         short_path = ntpath.basename(image_path[0])
         name = os.path.splitext(short_path)[0]

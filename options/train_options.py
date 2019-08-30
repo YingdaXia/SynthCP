@@ -43,5 +43,12 @@ class TrainOptions(BaseOptions):
         # for FCN and joint training
         parser.add_argument('--joint_train', action='store_true', help='specify to joint train seg and SPADE')
         parser.add_argument('--fcn_pretrained', type=str, default='', help='pretrained_fcn_path')
+
+        parser.add_argument('--init_name', type=str, default='dir name of networks for loading weights')
+        # for evaluating AE/SPADE
+        parser.add_argument('--eval_losses_dir', type=str, default='.', help='dir to save evaluation losses')
+        parser.add_argument('--eval_spade', type=bool, default=False, help='when eval SPADE, input should be gtFinePred')
+        parser.add_argument('--n_fold', type=int, default=1, help='when eval SPADE, input should be gtFinePred')
+        parser.add_argument('--fold', type=int, default=0, help='when eval SPADE, input should be gtFinePred')
         self.isTrain = True
         return parser

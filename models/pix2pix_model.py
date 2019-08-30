@@ -84,8 +84,8 @@ class Pix2PixModel(torch.nn.Module):
 
     def create_optimizers(self, opt):
         G_params = []
-        if not opt.no_G_grad:
-            G_params += list(self.netG.parameters())
+        #if not opt.no_G_grad:
+        G_params += list(self.netG.parameters())
         if opt.use_vae:
             G_params += list(self.netE.parameters())
         if opt.joint_train:
@@ -139,7 +139,7 @@ class Pix2PixModel(torch.nn.Module):
             net = util.load_network(net, 'S', opt.which_epoch, opt)
         net.eval()
         return net
-            
+
 
     # preprocess the input, such as moving the tensors to GPUs and
     # transforming the label map to one-hot encoding
