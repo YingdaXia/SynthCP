@@ -1,8 +1,8 @@
 GPUs=$1
 python train_iounet.py --name cityscapes_iounet_c19 --dataset_mode iou \
                 --dataroot /data/yzhang/cityscapes \
-                --image_src_dir /data/yzhang/cityscapes/leftImg8bit/val \
-                --image_rec_dir /data/yzhang/cityscapes/leftImg8bit/val \
+                --image_src_dir /data/yzhang/cityscapes/leftImg8bitResize/train \
+                --image_rec_dir /data/yzhang/cityscapes/leftImg8bitRec/train \
                 --iou_dir /data/yzhang/Domain-Adaptation/metrics \
                 --label_nc 19 --no_instance \
                 --use_vae \

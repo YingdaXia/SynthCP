@@ -23,7 +23,7 @@ class BaseOptions():
         parser.add_argument('--name', type=str, default='cityscapes_from_gta5', help='name of the experiment. It decides where to store samples and models')
 
         parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
-        parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints/fcn8s/', help='models are saved here')
+        parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints/iounet/', help='models are saved here')
         parser.add_argument('--phase', type=str, default='train', help='train, val, test, etc')
         parser.add_argument('--model', type=str, default='fcn8s', help='which model to use')
 
@@ -64,7 +64,7 @@ class BaseOptions():
 
         # for evaluating AE/SPADE
         parser.add_argument('--eval_losses_dir', type=str, default='.', help='dir to save evaluation losses')
-        parser.add_argument('--eval_spade', type=bool, default=False, help='when eval SPADE, input should be gtFinePred')
+        parser.add_argument('--eval_spade', action='store_true', help='when eval SPADE, input should be gtFinePred')
         parser.add_argument('--n_fold', type=int, default=0, help='n fold validation')
         parser.add_argument('--fold', type=int, default=0, help='fold number')
 

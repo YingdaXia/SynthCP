@@ -54,7 +54,7 @@ for i, data_i in enumerate(dataloader, start=iter_counter.epoch_iter):
     visualizer.record_losses(iter_counter.epoch_iter, losses)
 
     # Save reconstructed image
-    img_rec_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitGTRec')
+    img_rec_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitRec')
     os.makedirs(os.path.dirname(img_rec_path), exist_ok=True)
     Image.fromarray(tensor2im(trainer.get_latest_generated()[0])).save(img_rec_path)
 

@@ -35,12 +35,12 @@ class Pix2pixDataset(BaseDataset):
         util.natural_sort(image_paths)
         if not opt.no_instance:
             util.natural_sort(instance_paths)
-            if opt.cross_validation_mode == 'train':
+            if n_fold == 0 or opt.cross_validation_mode == 'train':
                 instance_paths = [instance_paths[i] for i in range(L) if i not in leaveout_indices]
             else:
                 instance_paths = [instance_paths[i] for i in range(L) if i in leaveout_indices]
 
-        if opt.cross_validation_mode == 'train':
+        if n_fold == 0 or opt.cross_validation_mode == 'train':
             label_paths = [label_paths[i] for i in range(L) if i not in leaveout_indices]
             image_paths = [image_paths[i] for i in range(L) if i not in leaveout_indices]
         else:
