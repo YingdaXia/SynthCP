@@ -4,8 +4,8 @@ python eval_ae.py --name cityscapes_label_only_c19 --dataset_mode cityscapes \
                 --dataroot /data/yzhang/cityscapes \
                 --label_dir /data/yzhang/gta5_deeplab/labels \
                 --image_dir /data/yzhang/gta5_deeplab/images \
-                --label_nc 19 --no_instance --continue_train --which_epoch 50 --eval_losses_dir . --phase test --no_flip --eval_spade True \
+                --label_nc 19 --no_instance --continue_train --which_epoch 50 --eval_losses_dir . --phase train --no_flip --eval_spade False \
                 --batchSize 1 --serial_batches \
                 --nThread 16 \
-                --gpu_ids 0 \
+                --gpu_ids 1 \
 

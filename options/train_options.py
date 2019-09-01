@@ -45,5 +45,9 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--fcn_pretrained', type=str, default='', help='pretrained_fcn_path')
 
         parser.add_argument('--init_name', type=str, default='dir name of networks for loading weights')
+        parser.add_argument('--n_fold', type=int, default=0, help='n fold validation')
+        parser.add_argument('--fold', type=int, default=0, help='fold number')
+        parser.add_argument('--cross_validation_mode', type=str, default='train', help='cross validation mode')
+
         self.isTrain = True
         return parser

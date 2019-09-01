@@ -10,7 +10,11 @@ import data
 from util.iter_counter import IterationCounter
 from util.visualizer import Visualizer
 from trainers.pix2pix_trainer import Pix2PixTrainer
+from PIL import Image
+from util.util import tensor2im
 import torch
+import os
+import pdb
 
 #torch.backends.cudnn.benchmark = False
 
@@ -48,6 +52,11 @@ for i, data_i in enumerate(dataloader, start=iter_counter.epoch_iter):
     # Visualizations
     losses = trainer.get_latest_losses()
     visualizer.record_losses(iter_counter.epoch_iter, losses)
+
+    # Save reconstructed image
+    img_rec_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitGTRec')
+    os.makedirs(os.path.dirname(img_rec_path), exist_ok=True)
+    Image.fromarray(tensor2im(trainer.get_latest_generated()[0])).save(img_rec_path)
 
     visuals = OrderedDict([('input_label', data_i['label']),
                            ('synthesized_image', trainer.get_latest_generated()),

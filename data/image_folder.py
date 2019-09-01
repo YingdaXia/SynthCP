@@ -22,6 +22,8 @@ IMG_EXTENSIONS = [
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
+def is_json_file(filename):
+    return filename.endswith('.json')
 
 def make_dataset_rec(dir, images):
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
@@ -32,6 +34,16 @@ def make_dataset_rec(dir, images):
                 path = os.path.join(root, fname)
                 images.append(path)
 
+def make_iou_dataset(dir, recursive=False):
+    ious = []
+    assert os.path.isdir(dir), '%s is not a valid directory' % dir
+
+    for root, dnames, fnames in sorted(os.walk(dir, followlinks=recursive)):
+        for fname in fnames:
+            if is_json_file(fname):
+                path = os.path.join(root, fname)
+                ious.append(path)
+    return ious
 
 def make_dataset(dir, recursive=False, read_cache=False, write_cache=False):
     images = []

@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from PIL import Image
+from util.util import tensor2im
 from options.fcn_options import BaseOptions
 
 from models.fcn8 import VGG16_FCN8s
@@ -82,13 +83,22 @@ for i, data_i in iterations:
     os.makedirs(os.path.dirname(pred_path), exist_ok=True)
     Image.fromarray(np.uint8(preds.cpu().numpy()[0])).save(pred_path)
 
+
+    img_transformed_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitResize')
+    os.makedirs(os.path.dirname(img_transformed_path), exist_ok=True)
+    Image.fromarray(tensor2im(data_i['image'][0])).save(img_transformed_path)
+
     hist = fast_hist(label.numpy().flatten(),
             preds.cpu().numpy().flatten(),
             19)
     acc_overall, acc_percls, iu, fwIU, pix_percls = result_stats(hist)
     iterations.set_postfix({'mIoU':' {:0.2f}  fwIoU: {:0.2f} pixel acc: {:0.2f} per cls acc: {:0.2f}'.format(
         np.nanmean(iu), fwIU, acc_overall, np.nanmean(acc_percls))})
-    metrics.append([iu.tolist(), pix_percls.tolist(), fwIU, acc_overall, acc_percls.tolist()])
+    metric = [iu.tolist(), pix_percls.tolist(), fwIU, acc_overall, acc_percls.tolist()]
+    metrics.append(metric)
+    os.makedirs('metrics', exist_ok=True)
+    with open(os.path.join('metrics', os.path.splitext(os.path.basename(data_i['path'][0]))[0] + '.json'), 'w') as f:
+        json.dump(metric, f)
 print()
 with open(os.path.join('.', 'metrics.json'), 'w') as f:
     json.dump(metrics, f)

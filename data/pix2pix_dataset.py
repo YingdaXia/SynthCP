@@ -6,6 +6,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 from data.base_dataset import BaseDataset, get_params, get_transform
 from PIL import Image
 import util.util as util
+import numpy as np
 import torch
 import os
 
@@ -25,15 +26,26 @@ class Pix2pixDataset(BaseDataset):
         n_fold=opt.n_fold
         fold=opt.fold
         L = len(image_paths)
+        if n_fold == 0:
+            leaveout_indices = []
+        else:
+            leaveout_indices = np.arange(int(fold*L/n_fold), int((fold+1)*L/n_fold))
 
         util.natural_sort(label_paths)
         util.natural_sort(image_paths)
         if not opt.no_instance:
             util.natural_sort(instance_paths)
-            instance_paths = instance_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
+            if opt.cross_validation_mode == 'train':
+                instance_paths = [instance_paths[i] for i in range(L) if i not in leaveout_indices]
+            else:
+                instance_paths = [instance_paths[i] for i in range(L) if i in leaveout_indices]
 
-        label_paths = label_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
-        image_paths = image_paths[int(fold*L/n_fold):int((fold+1)*L/n_fold)]
+        if opt.cross_validation_mode == 'train':
+            label_paths = [label_paths[i] for i in range(L) if i not in leaveout_indices]
+            image_paths = [image_paths[i] for i in range(L) if i not in leaveout_indices]
+        else:
+            label_paths = [label_paths[i] for i in range(L) if i in leaveout_indices]
+            image_paths = [image_paths[i] for i in range(L) if i in leaveout_indices]
 
         label_paths = label_paths[:opt.max_dataset_size]
         image_paths = image_paths[:opt.max_dataset_size]
@@ -74,7 +86,6 @@ class Pix2pixDataset(BaseDataset):
         label = Image.open(label_path)
         params = get_params(self.opt, label.size)
 
-        print(self.opt.eval_spade)
         transform_label = get_transform(self.opt, params, method=Image.NEAREST, normalize=False, for_label=self.opt.eval_spade)
         label_tensor = transform_label(label) * 255.0
 
