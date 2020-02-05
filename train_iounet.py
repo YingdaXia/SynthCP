@@ -12,7 +12,7 @@ import torchvision
 from PIL import Image
 from options.iounet_options import BaseOptions
 
-from models.resnet import IOUNet
+from models.resnet import IOUwConfNet
 import data
 import pdb
 
@@ -48,13 +48,15 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = IOUNet(num_cls=opt.label_nc)
+net = IOUwConfNet(num_cls=opt.label_nc)
 net.cuda()
 transform = []
 target_transform = []
 
 optimizer = torch.optim.SGD(net.parameters(), lr=opt.lr, momentum=0.99,
                         weight_decay=0.0005)
+
+#optimizer = torch.optim.Adam(net.parameters(), lr=opt.lr)
 
 iteration = 0
 losses = deque(maxlen=10)
@@ -71,28 +73,37 @@ while True:
         im_src = data_i['image_src'].cuda()
         im_rec = data_i['image_rec'].cuda()
 
-        label = data_i['iou'].cuda()
-        preds = net(im_src, im_rec)
-        valid=data_i['valid'].cuda()
-        loss = torch.nn.SmoothL1Loss(reduce=False)(preds, label)
-        # mask out invalid terms
-        loss *= valid.float()
-        loss = loss.mean()
+        iou_label = data_i['iou'].cuda()
+        prob = data_i['prob'].cuda()
+        label_map = data_i['label_map'].cuda()
 
+        correct_map = (prob.argmax(dim=1).long() == label_map.long()).float()
+
+        pred_iou, conf = net(prob, im_src, im_rec)
+
+        valid=data_i['valid'].cuda()
+        loss_iou = torch.nn.SmoothL1Loss(reduce=False)(pred_iou, iou_label / 100)
+        # mask out invalid terms
+        loss_iou *= valid.float()
+        loss_iou = loss_iou.mean()
+
+        # loss conf
+        loss_conf = torch.nn.BCELoss(reduction='none')(conf, correct_map.unsqueeze(1)) * (label_map.unsqueeze(1) != 19).float()
+        loss_conf = loss_conf.mean()
         # backward pass
+        loss = loss_iou + loss_conf
         loss.backward()
-        losses.append(loss.item())
 
         # step gradients
         optimizer.step()
 
         # log results
         if iteration % 10 == 0:
-            print('Iteration {}:\t{}'.format(iteration, np.mean(losses)))
+            print('Iteration {}:\tiou loss: {} \tconf loss: {}'.format(iteration, loss_iou.item(), loss_conf.item()))
         iteration += 1
 
         if iteration % opt.snapshot == 0:
-            torch.save(net.state_dict(), os.path.join(opt.checkpoints_dir, '{}-iter{}.pth'.format(opt.name, iteration)))
+            torch.save(net.state_dict(), os.path.join(opt.checkpoints_dir, opt.name, '{}-iter{}.pth'.format(opt.name, iteration)))
         if iteration >= opt.niter:
             print('Optimization complete.')
             break

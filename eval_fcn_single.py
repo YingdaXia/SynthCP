@@ -79,10 +79,10 @@ for i, data_i in iterations:
     score = net(im).data
     _, preds = torch.max(score, 1)
     #pdb.set_trace()
-    pred_path = data_i['label_path'][0].replace('gtFine', 'gtFinePred')
+    pred_path = data_i['label_path'][0].replace('gtFine', 'gtFinePredProb')
     os.makedirs(os.path.dirname(pred_path), exist_ok=True)
     Image.fromarray(np.uint8(preds.cpu().numpy()[0])).save(pred_path)
-
+    np.savez_compressed(pred_path, prob=score.cpu().numpy()[0], label=label.numpy()[0].astype(np.uint8))
 
     img_transformed_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitResize')
     os.makedirs(os.path.dirname(img_transformed_path), exist_ok=True)
@@ -96,12 +96,12 @@ for i, data_i in iterations:
         np.nanmean(iu), fwIU, acc_overall, np.nanmean(acc_percls))})
     metric = [iu.tolist(), pix_percls.tolist(), fwIU, acc_overall, acc_percls.tolist()]
     metrics.append(metric)
-    os.makedirs('metrics', exist_ok=True)
-    with open(os.path.join('metrics', os.path.splitext(os.path.basename(data_i['path'][0]))[0] + '.json'), 'w') as f:
+    os.makedirs('metrics_trainccv', exist_ok=True)
+    with open(os.path.join('metrics_trainccv', os.path.splitext(os.path.basename(data_i['path'][0]))[0] + '.json'), 'w') as f:
         json.dump(metric, f)
 print()
-with open(os.path.join('.', 'metrics.json'), 'w') as f:
-    json.dump(metrics, f)
+#with open(os.path.join('.', 'metrics.json'), 'w') as f:
+#    json.dump(metrics, f)
 #print(','.join(classes))
 #print(fmt_array(iu))
 #print(np.nanmean(iu), fwIU, acc_overall, np.nanmean(acc_percls))

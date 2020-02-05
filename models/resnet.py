@@ -202,24 +202,31 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x, output_ft = False):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
 
         x = self.layer1(x)
+        ft1 = x
         x = self.layer2(x)
+        ft2 = x
         x = self.layer3(x)
+        ft3 = x
         x = self.layer4(x)
+        ft4 = x
 
         if self.squeeze_spatial:
             x = self.avgpool(x)
             x = torch.flatten(x, 1)
         if self.with_fc:
             x = self.fc(x)
-
-        return x
+        
+        if output_ft:
+            return x, [ft1, ft2, ft3, ft4]
+        else:
+            return x
 
 
 def _resnet(arch, block, layers, pretrained, progress, **kwargs):
@@ -245,13 +252,55 @@ class IOUNet(nn.Module):
         self.siamese = resnet18(pretrained=True, squeeze_spatial=True, with_fc=False)
         self.regress = nn.Linear(self.siamese.feature_dim, self.num_cls)
 
-    def forward(self, I, I_rec):
+    def forward(self, prob, I, I_rec):
         x = self.siamese(I)
         x_rec = self.siamese(I_rec)
         x = x * x_rec
         x = self.regress(x)
 
         return x
+
+class IOUwConfNet(nn.Module):
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]),
+        ])
+
+    def __init__(self, num_cls=19, pretrained=True, weights_init=None):
+        super(IOUwConfNet, self).__init__()
+        self.num_cls = num_cls
+        self.siamese = resnet18(pretrained=True, squeeze_spatial=True, with_fc=False)
+        self.ft_convs = nn.ModuleList([
+            nn.Sequential(nn.Conv2d(64, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
+            nn.Sequential(nn.Conv2d(128, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
+            nn.Sequential(nn.Conv2d(256, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
+            nn.Sequential(nn.Conv2d(512, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
+        ])
+        self.pred_conv = nn.Sequential(nn.Conv2d(19, 256, kernel_size=1), nn.BatchNorm2d(256), nn.ReLU(True)) 
+        self.conf = nn.Conv2d(512, 1, kernel_size=1)
+        self.regress = nn.Linear(self.siamese.feature_dim, self.num_cls)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, pred, I, I_rec):
+        w, h = pred.shape[2:]
+        x, ft = self.siamese(I, output_ft=True)
+        x_rec, ft_rec = self.siamese(I_rec, output_ft=True)
+
+        # predict confidence
+        ft_cat = []
+        for ft1, ft2, ft_conv in zip(ft, ft_rec, self.ft_convs):
+            ft_cat.append(nn.functional.interpolate(ft_conv(ft1 * ft2), size=(w,h), mode='bilinear'))
+        ft_cat.append(self.pred_conv(pred))
+        conf = self.conf(torch.cat(ft_cat, dim=1))
+        conf = nn.Sigmoid()(conf)
+
+        # predict IOU
+        x = x * x_rec
+        x = self.regress(x)
+
+        return x, conf
 
 
 def resnet18(pretrained=False, progress=True, **kwargs):

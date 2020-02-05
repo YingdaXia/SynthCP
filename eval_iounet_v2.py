@@ -14,6 +14,7 @@ from options.iounet_options import BaseOptions
 
 from models.resnet import IOUwConfNet
 import anom_utils 
+from metric import Metrics
 import data
 import json
 import pdb
@@ -75,6 +76,12 @@ iteration = 0
 losses = deque(maxlen=10)
 aurocs, auprs, fprs = [], [], []
 pred_ious, real_ious = [], []
+
+metrics = Metrics(
+        #['accuracy', 'mean_iou', 'auc', 'ap_success', 'ap_errors', 'fpr_at_95tpr'], 500 * 256 * 512, 19
+        ['accuracy', 'mean_iou', 'auc', 'ap_success', 'ap_errors'], 500 * 256 * 512, 19
+        )
+loss, len_steps, len_data = 0, 0, 0
 for i, data_i in enumerate(dataloader):
     # Clear out gradients
 
@@ -89,31 +96,43 @@ for i, data_i in enumerate(dataloader):
     iou_label = data_i['iou'].cuda()
     prob = data_i['prob'].cuda()
     label_map = data_i['label_map'].cuda()
-    pred = prob.argmax(dim=1)
-    max_prob = torch.nn.Softmax(dim=1)(prob).max(dim=1)[0]
+    #pred = prob.argmax(dim=1)
+    max_prob, pred = torch.nn.Softmax(dim=1)(prob).max(dim=1)
 
     with torch.no_grad():
         pred_iou, conf = net(prob, im_src, im_rec)
-    import pdb
-    pdb.set_trace()
-    #res = eval_ood_measure(conf.cpu().numpy()[0,0], pred.cpu().numpy()[0], label_map.cpu().numpy()[0], mask=None)
-    res = eval_ood_measure(max_prob.cpu().numpy()[0], pred.cpu().numpy()[0], label_map.cpu().numpy()[0], mask=None)
-    if res is not None:
-        auroc, aupr, fpr = res
-        aurocs.append(auroc); auprs.append(aupr), fprs.append(fpr)
-    
+
+    len_steps += 1 * 256 * 512
+    len_data += 1
+
+    pred = pred[label_map != 19]
+    conf = conf.squeeze(0)
+    conf = conf[label_map != 19]
+    max_prob = max_prob[label_map != 19]
+    label_map = label_map[label_map != 19]
+    metrics.update(pred.long(), label_map.long(), conf)
+    #metrics.update(pred.long(), label_map.long(), max_prob)
 
     valid=data_i['valid'].cuda()
     pred_ious.append(pred_iou[0].cpu().numpy())
     real_ious.append(iou_label[0].cpu().numpy() / 100)
 
     metric = [pred_iou.cpu().numpy()[0].tolist()]
-    opt.metric_pred_dir = os.path.join('./chechpoints', opt.name, 'metrics_pred_iouconf')
+    opt.metric_pred_dir = os.path.join('./checkpoints', opt.name, 'metrics_pred_iouconf')
+
+    #conf_dir = os.path.join('./checkpoints', opt.name, 'confnetpred')
+    #os.makedirs(conf_dir, exist_ok=True)
+    #np.savez_compressed(os.path.join(conf_dir, os.path.basename(data_i['image_src_path'][0])), 
+    #                    conf=conf[0].cpu().numpy(), prob=prob[0].cpu().numpy(), label=label_map[0].cpu().numpy())
+
     os.makedirs(opt.metric_pred_dir, exist_ok=True)
     with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
         json.dump(metric, f)
-
-print("mean auroc = ", np.mean(aurocs), "mean aupr = ", np.mean(auprs), " mean fpr = ", np.mean(fprs))
+scores = metrics.get_scores(split="val")
+logs_dict = {}
+for s in scores:
+    logs_dict[s] = scores[s]
+print(logs_dict)
 mae = np.mean(np.abs(np.array(pred_ious) - np.array(real_ious)), axis=0)
 print("mae = ", mae)
 print("mmae = ", np.mean(mae))

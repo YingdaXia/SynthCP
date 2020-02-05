@@ -2,6 +2,8 @@
 import torch.utils.data as data
 import os
 from PIL import Image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -16,14 +18,16 @@ from data.image_folder import make_dataset, make_iou_dataset
 class IOUDataset(BaseDataset):
 
     def initialize(self, opt):
-        image_src_paths, image_rec_paths, label_paths = self.get_paths(opt)
+        image_src_paths, image_rec_paths, label_paths, pred_paths = self.get_paths(opt)
         util.natural_sort(image_src_paths)
         util.natural_sort(image_rec_paths)
         util.natural_sort(label_paths)
+        util.natural_sort(pred_paths)
 
         self.image_src_paths = image_src_paths
         self.image_rec_paths = image_rec_paths
         self.label_paths = label_paths
+        self.pred_paths = pred_paths
         print(len(label_paths))
 
         self.transform = torchvision.transforms.Compose([
@@ -40,13 +44,18 @@ class IOUDataset(BaseDataset):
         image_src_path = self.image_src_paths[index]
         image_rec_path = self.image_rec_paths[index]
         label_path = self.label_paths[index]
+        pred_path = self.pred_paths[index] + '.npz'
         assert self.paths_match(label_path, image_src_path, image_rec_path), \
             "The label_path %s, image_src_path %s and image_rec_path %s don't match." % \
             (label_path, image_src_path, image_rec_path)
 
         image_src = Image.open(image_src_path).convert('RGB')
         image_rec = Image.open(image_rec_path).convert('RGB')
-        label = json.load(open(label_path, 'r'))
+        iou_label = json.load(open(label_path, 'r'))
+
+        prob_map, label_map = np.load(pred_path)['prob'], np.load(pred_path)['label']
+        prob_map = torch.from_numpy(prob_map)
+        label_map = torch.from_numpy(label_map)
 
         image_src_tensor = self.transform(image_src)
         image_rec_tensor = self.transform(image_rec)
@@ -54,9 +63,11 @@ class IOUDataset(BaseDataset):
         data = {
                   'image_src' : image_src_tensor,
                   'image_rec' : image_rec_tensor,
-                  'iou' : torch.tensor( label[0]),
-                  'valid' : torch.tensor(label[1]) != 0,
-                  'image_src_path' : image_src_path
+                  'iou' : torch.tensor( iou_label[0]),
+                  'valid' : torch.tensor(iou_label[1]) != 0,
+                  'image_src_path' : image_src_path,
+                  'prob' : prob_map,
+                  'label_map' : label_map
                 }
         return data
 
@@ -68,7 +79,8 @@ class IOUDataset(BaseDataset):
         image_src_paths = make_dataset(opt.image_src_dir, recursive=True)
         image_rec_paths = make_dataset(opt.image_rec_dir, recursive=True)
         label_paths = make_iou_dataset(opt.iou_dir, recursive=True)
-        return image_src_paths, image_rec_paths, label_paths
+        pred_paths = make_dataset(opt.pred_dir, recursive=True)
+        return image_src_paths, image_rec_paths, label_paths, pred_paths
 
     def paths_match(self, path1, path2, path3):
         name1 = os.path.basename(path1)

@@ -72,6 +72,7 @@ class BaseOptions():
         parser.add_argument('--image_src_dir', type=str, default='.', help='directory of source images for training IOUNet')
         parser.add_argument('--image_rec_dir', type=str, default='.', help='directory of reconstructed images for training IOUNet')
         parser.add_argument('--iou_dir', type=str, default='metrics', help='directory of ious for training IOUNet')
+        parser.add_argument('--pred_dir', type=str, default='/mnt/sdd/yingda/data/alarmseg/cityscapes/gtFinePredProb/train')
         self.initialized = True
         return parser
 
