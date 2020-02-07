@@ -110,6 +110,13 @@ for i, data_i in enumerate(dataloader):
     conf = conf[label_map != 19]
     max_prob = max_prob[label_map != 19]
     label_map = label_map[label_map != 19]
+
+    
+    correct_map = (pred.long() == label_map.long()).float()
+    #tensor_max = torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
+    #tensor_min = -1.0 * torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
+    #conf = tensor_max * correct_map + tensor_min * (1 - correct_map)
+    conf = conf + max_prob
     metrics.update(pred.long(), label_map.long(), conf)
     #metrics.update(pred.long(), label_map.long(), max_prob)
 
@@ -117,17 +124,17 @@ for i, data_i in enumerate(dataloader):
     pred_ious.append(pred_iou[0].cpu().numpy())
     real_ious.append(iou_label[0].cpu().numpy() / 100)
 
-    metric = [pred_iou.cpu().numpy()[0].tolist()]
-    opt.metric_pred_dir = os.path.join('./checkpoints', opt.name, 'metrics_pred_iouconf')
-
     #conf_dir = os.path.join('./checkpoints', opt.name, 'confnetpred')
     #os.makedirs(conf_dir, exist_ok=True)
     #np.savez_compressed(os.path.join(conf_dir, os.path.basename(data_i['image_src_path'][0])), 
     #                    conf=conf[0].cpu().numpy(), prob=prob[0].cpu().numpy(), label=label_map[0].cpu().numpy())
 
-    os.makedirs(opt.metric_pred_dir, exist_ok=True)
-    with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
-        json.dump(metric, f)
+    #metric = [pred_iou.cpu().numpy()[0].tolist()]
+    #opt.metric_pred_dir = os.path.join('./checkpoints', opt.name, 'metrics_pred_iouconf')
+
+    #os.makedirs(opt.metric_pred_dir, exist_ok=True)
+    #with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
+    #    json.dump(metric, f)
 scores = metrics.get_scores(split="val")
 logs_dict = {}
 for s in scores:

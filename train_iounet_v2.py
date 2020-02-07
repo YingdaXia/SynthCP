@@ -12,7 +12,7 @@ import torchvision
 from PIL import Image
 from options.iounet_options import BaseOptions
 
-from models.resnet_v3 import IOUwConfNet
+from models.resnet import IOUwConfNet
 import data
 import pdb
 
@@ -89,6 +89,7 @@ while True:
 
         # loss conf
         loss_conf = torch.nn.BCELoss(reduction='none')(conf, correct_map.unsqueeze(1)) * (label_map.unsqueeze(1) != 19).float()
+        loss_conf = loss_conf * (torch.nn.Softmax(dim=1)(prob).max(dim=1, keepdim=True)[0] ** 2)
         loss_conf = loss_conf.mean()
         # backward pass
         loss = loss_iou + loss_conf
@@ -102,7 +103,7 @@ while True:
             print('Iteration {}:\tiou loss: {} \tconf loss: {}'.format(iteration, loss_iou.item(), loss_conf.item()))
         iteration += 1
 
-        if iteration % 5000 == 0:
+        if iteration % opt.snapshot == 0:
             torch.save(net.state_dict(), os.path.join(opt.checkpoints_dir, opt.name, 'iter{}.pth'.format(iteration)))
         if iteration >= opt.niter:
             print('Optimization complete.')
