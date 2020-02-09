@@ -12,7 +12,7 @@ import torchvision
 from PIL import Image
 from options.iounet_options import BaseOptions
 
-from models.resnet import IOUwConfNet
+from models.resnet import IOUwConfNet, IOUwConfNetBaseline
 import data
 import pdb
 
@@ -48,7 +48,7 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = IOUwConfNet(num_cls=opt.label_nc)
+net = IOUwConfNetBaseline (num_cls=opt.label_nc)
 net.cuda()
 transform = []
 target_transform = []

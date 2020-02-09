@@ -13,10 +13,12 @@ from PIL import Image
 from options.iounet_options import BaseOptions
 
 from models.resnet import IOUwConfNet
-import anom_utils 
+import anom_utils
 from metric import Metrics
 import data
-import json
+import json, pickle
+from tqdm import tqdm
+from scipy import stats
 import pdb
 
 def to_tensor_raw(im):
@@ -56,90 +58,116 @@ def eval_ood_measure(conf, pred, seg_label, mask=None):
         print("This image does not contain any OOD pixels or is only OOD.")
         return None
 
-# parse options
-opt = BaseOptions().parse()
+def eval_alarm_metrics(pred_ious, real_ious):
+    mae = np.nanmean(np.abs(np.array(pred_ious) - np.array(real_ious)), axis=0)
+    classes = ['road', 'sidewalk', 'building', 'wall', 'fence', 'pole', 'traffic light', 'traffic sign',
+                    'vegetation', 'terrain', 'sky', 'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
+                            'bicycle']
+    pred_ious = np.array(pred_ious)
+    real_ious = np.array(real_ious)
+    pcs = []
+    for cls, cls_name in enumerate(classes):
+        valid_inds = np.logical_not(np.isnan(real_ious[:,cls]))
+        r, p = stats.pearsonr(real_ious[:,cls][valid_inds], pred_ious[:,cls][valid_inds])
+        #print('%s, correlation coefficient: %.3f, p value: %.6f' % (cls_name, r, p))
+        pcs.append(r)
+    print(("{},"*len(classes)).format(*classes))
+    print(("P.C. = "+"{:.6f},"*len(classes)).format(*pcs))
+    print(("mae = "+"{:.6f},"*len(classes)).format(*mae))
+    print("mmae = ", np.nanmean(mae))
 
-# print options to help debugging
-print(' '.join(sys.argv))
+def main():
+    # parse options
+    opt = BaseOptions().parse()
 
-# load the dataset
-dataloader = data.create_dataloader(opt)
+    # print options to help debugging
+    print(' '.join(sys.argv))
 
-net = IOUwConfNet(num_cls=opt.label_nc)
-net.load_state_dict(torch.load(opt.model_path))
-net.eval()
-net.cuda()
-transform = []
-target_transform = []
+    # load the dataset
+    dataloader = data.create_dataloader(opt)
 
-iteration = 0
-losses = deque(maxlen=10)
-aurocs, auprs, fprs = [], [], []
-pred_ious, real_ious = [], []
+    net = IOUwConfNet(num_cls=opt.label_nc)
+    net.load_state_dict(torch.load(opt.model_path))
+    net.eval()
+    net.cuda()
+    transform = []
+    target_transform = []
 
-metrics = Metrics(
-        #['accuracy', 'mean_iou', 'auc', 'ap_success', 'ap_errors', 'fpr_at_95tpr'], 500 * 256 * 512, 19
-        ['accuracy', 'mean_iou', 'auc', 'ap_success', 'ap_errors'], 500 * 256 * 512, 19
-        )
-loss, len_steps, len_data = 0, 0, 0
-for i, data_i in enumerate(dataloader):
-    # Clear out gradients
+    iteration = 0
+    losses = deque(maxlen=10)
+    aurocs, auprs, fprs = [], [], []
+    pred_ious, real_ious = [], []
 
-    # load data/label
-    #im = make_variable(im, requires_grad=False)
-    #label = make_variable(label, requires_grad=False)
+    metrics = Metrics(
+            #['accuracy', 'mean_iou', 'auc', 'ap_success', 'ap_errors', 'fpr_at_95tpr'], 500 * 256 * 512, 19
+            ['accuracy', 'mean_iou', 'auc', 'ap_success', 'ap_errors'], 500 * 256 * 512, 19
+            )
+    loss, len_steps, len_data = 0, 0, 0
+    for i, data_i in tqdm(enumerate(dataloader)):
+        # Clear out gradients
 
-    # forward pass and compute loss
-    im_src = data_i['image_src'].cuda()
-    im_rec = data_i['image_rec'].cuda()
+        # load data/label
+        #im = make_variable(im, requires_grad=False)
+        #label = make_variable(label, requires_grad=False)
 
-    iou_label = data_i['iou'].cuda()
-    prob = data_i['prob'].cuda()
-    label_map = data_i['label_map'].cuda()
-    #pred = prob.argmax(dim=1)
-    max_prob, pred = torch.nn.Softmax(dim=1)(prob).max(dim=1)
+        # forward pass and compute loss
+        im_src = data_i['image_src'].cuda()
+        im_rec = data_i['image_rec'].cuda()
 
-    with torch.no_grad():
-        pred_iou, conf = net(prob, im_src, im_rec)
+        iou_label = data_i['iou'].cuda()
+        prob = data_i['prob'].cuda()
+        label_map = data_i['label_map'].cuda()
+        #pred = prob.argmax(dim=1)
+        max_prob, pred = torch.nn.Softmax(dim=1)(prob).max(dim=1)
 
-    len_steps += 1 * 256 * 512
-    len_data += 1
+        with torch.no_grad():
+            pred_iou, conf = net(prob, im_src, im_rec)
 
-    pred = pred[label_map != 19]
-    conf = conf.squeeze(0)
-    conf = conf[label_map != 19]
-    max_prob = max_prob[label_map != 19]
-    label_map = label_map[label_map != 19]
+        len_steps += 1 * 256 * 512
+        len_data += 1
 
-    
-    correct_map = (pred.long() == label_map.long()).float()
-    #tensor_max = torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
-    #tensor_min = -1.0 * torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
-    #conf = tensor_max * correct_map + tensor_min * (1 - correct_map)
-    conf = conf + max_prob
-    metrics.update(pred.long(), label_map.long(), conf)
-    #metrics.update(pred.long(), label_map.long(), max_prob)
+        pred = pred[label_map != 19]
+        conf = conf.squeeze(0)
+        conf = conf[label_map != 19]
+        max_prob = max_prob[label_map != 19]
+        label_map = label_map[label_map != 19]
 
-    valid=data_i['valid'].cuda()
-    pred_ious.append(pred_iou[0].cpu().numpy())
-    real_ious.append(iou_label[0].cpu().numpy() / 100)
 
-    #conf_dir = os.path.join('./checkpoints', opt.name, 'confnetpred')
-    #os.makedirs(conf_dir, exist_ok=True)
-    #np.savez_compressed(os.path.join(conf_dir, os.path.basename(data_i['image_src_path'][0])), 
-    #                    conf=conf[0].cpu().numpy(), prob=prob[0].cpu().numpy(), label=label_map[0].cpu().numpy())
+        correct_map = (pred.long() == label_map.long()).float()
+        #tensor_max = torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
+        #tensor_min = -1.0 * torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
+        #conf = tensor_max * correct_map + tensor_min * (1 - correct_map)
+        conf = conf + max_prob
+        metrics.update(pred.long(), label_map.long(), conf)
+        #metrics.update(pred.long(), label_map.long(), max_prob)
 
-    #metric = [pred_iou.cpu().numpy()[0].tolist()]
-    #opt.metric_pred_dir = os.path.join('./checkpoints', opt.name, 'metrics_pred_iouconf')
+        valid=data_i['valid'][0].cpu().numpy()
+        real_iou_valid = iou_label[0].cpu().numpy() / 100
+        real_iou_valid[valid==0] = np.nan
+        pred_ious.append(pred_iou[0].cpu().numpy())
+        real_ious.append(real_iou_valid)
 
-    #os.makedirs(opt.metric_pred_dir, exist_ok=True)
-    #with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
-    #    json.dump(metric, f)
-scores = metrics.get_scores(split="val")
-logs_dict = {}
-for s in scores:
-    logs_dict[s] = scores[s]
-print(logs_dict)
-mae = np.mean(np.abs(np.array(pred_ious) - np.array(real_ious)), axis=0)
-print("mae = ", mae)
-print("mmae = ", np.mean(mae))
+        #conf_dir = os.path.join('./checkpoints', opt.name, 'confnetpred')
+        #os.makedirs(conf_dir, exist_ok=True)
+        #np.savez_compressed(os.path.join(conf_dir, os.path.basename(data_i['image_src_path'][0])),
+        #                    conf=conf[0].cpu().numpy(), prob=prob[0].cpu().numpy(), label=label_map[0].cpu().numpy())
+
+        #metric = [pred_iou.cpu().numpy()[0].tolist()]
+        #opt.metric_pred_dir = os.path.join('./checkpoints', opt.name, 'metrics_pred_iouconf')
+
+        #os.makedirs(opt.metric_pred_dir, exist_ok=True)
+        #with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
+        #    json.dump(metric, f)
+    #scores = metrics.get_scores(split="val")
+    #logs_dict = {}
+    #for s in scores:
+    #    logs_dict[s] = scores[s]
+    #print(logs_dict)
+
+    with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
+        pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
+
+    eval_alarm_metrics(pred_ious, real_ious)
+
+if __name__ == '__main__':
+    main()

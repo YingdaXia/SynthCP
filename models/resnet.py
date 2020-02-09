@@ -222,7 +222,7 @@ class ResNet(nn.Module):
             x = torch.flatten(x, 1)
         if self.with_fc:
             x = self.fc(x)
-        
+
         if output_ft:
             return x, [ft1, ft2, ft3, ft4]
         else:
@@ -278,7 +278,7 @@ class IOUwConfNet(nn.Module):
             nn.Sequential(nn.Conv2d(256, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
             nn.Sequential(nn.Conv2d(512, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
         ])
-        self.pred_conv = nn.Sequential(nn.Conv2d(19, 256, kernel_size=1), nn.BatchNorm2d(256), nn.ReLU(True)) 
+        self.pred_conv = nn.Sequential(nn.Conv2d(19, 256, kernel_size=1), nn.BatchNorm2d(256), nn.ReLU(True))
         self.conf = nn.Conv2d(512, 1, kernel_size=1)
         self.regress = nn.Linear(self.siamese.feature_dim, self.num_cls)
         self.relu = nn.ReLU(inplace=True)
@@ -316,19 +316,27 @@ class IOUwConfNetBaseline(nn.Module):
         super(IOUwConfNetBaseline, self).__init__()
         self.num_cls = num_cls
         self.siamese = resnet18(pretrained=True, squeeze_spatial=True, with_fc=False)
+
+        conv1 = self.siamese.conv1
+        new_conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        new_conv1.weight.data[:,:3,:,:] = conv1.weight.data.clone().detach().requires_grad_(True)
+        self.siamese.conv1 = new_conv1
+
         self.ft_convs = nn.ModuleList([
             nn.Sequential(nn.Conv2d(64, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
             nn.Sequential(nn.Conv2d(128, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
             nn.Sequential(nn.Conv2d(256, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
             nn.Sequential(nn.Conv2d(512, 64, kernel_size=1), nn.BatchNorm2d(64), nn.ReLU(True)),
         ])
-        self.pred_conv = nn.Sequential(nn.Conv2d(19, 256, kernel_size=1), nn.BatchNorm2d(256), nn.ReLU(True)) 
-        self.conf = nn.Conv2d(512, 1, kernel_size=1)
+        self.pred_conv = nn.Sequential(nn.Conv2d(19, 1, kernel_size=1), nn.BatchNorm2d(1), nn.ReLU(True))
+        self.conf = nn.Conv2d(256, 1, kernel_size=1)
         self.regress = nn.Linear(self.siamese.feature_dim, self.num_cls)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, pred, I, I_rec):
         pred = nn.Softmax(dim=1)(pred)
+        I = torch.cat((I, self.pred_conv(pred)), dim=1)
 
         w, h = pred.shape[2:]
         x, ft = self.siamese(I, output_ft=True)
@@ -337,7 +345,7 @@ class IOUwConfNetBaseline(nn.Module):
         ft_cat = []
         for ft1, ft_conv in zip(ft, self.ft_convs):
             ft_cat.append(nn.functional.interpolate(ft_conv(ft1), size=(w,h), mode='bilinear'))
-        ft_cat.append(self.pred_conv(pred))
+        #ft_cat.append(self.pred_conv(pred))
         conf = self.conf(torch.cat(ft_cat, dim=1))
         conf = nn.Sigmoid()(conf)
 
