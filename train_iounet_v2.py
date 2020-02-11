@@ -48,7 +48,8 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = IOUwConfNetBaseline (num_cls=opt.label_nc)
+net = IOUwConfNet (num_cls=opt.label_nc)
+#net = IOUwConfNetBaseline (num_cls=opt.label_nc)
 net.cuda()
 transform = []
 target_transform = []

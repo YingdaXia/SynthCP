@@ -12,7 +12,7 @@ import torchvision
 from PIL import Image
 from options.iounet_options import BaseOptions
 
-from models.resnet import IOUwConfNet
+from models.resnet import IOUwConfNet, IOUwConfNetBaseline
 import anom_utils
 from metric import Metrics
 import data
@@ -60,21 +60,36 @@ def eval_ood_measure(conf, pred, seg_label, mask=None):
 
 def eval_alarm_metrics(pred_ious, real_ious):
     mae = np.nanmean(np.abs(np.array(pred_ious) - np.array(real_ious)), axis=0)
+    std = np.nanstd(np.abs(np.array(pred_ious) - np.array(real_ious)), axis=0)
     classes = ['road', 'sidewalk', 'building', 'wall', 'fence', 'pole', 'traffic light', 'traffic sign',
                     'vegetation', 'terrain', 'sky', 'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
                             'bicycle']
     pred_ious = np.array(pred_ious)
     real_ious = np.array(real_ious)
     pcs = []
+    scs = []
     for cls, cls_name in enumerate(classes):
         valid_inds = np.logical_not(np.isnan(real_ious[:,cls]))
-        r, p = stats.pearsonr(real_ious[:,cls][valid_inds], pred_ious[:,cls][valid_inds])
+        pc, p = stats.pearsonr(real_ious[:,cls][valid_inds], pred_ious[:,cls][valid_inds])
+        sc, p = stats.spearmanr(real_ious[:,cls][valid_inds], pred_ious[:,cls][valid_inds])
         #print('%s, correlation coefficient: %.3f, p value: %.6f' % (cls_name, r, p))
-        pcs.append(r)
+        pcs.append(pc)
+        scs.append(sc)
     print(("{},"*len(classes)).format(*classes))
     print(("P.C. = "+"{:.6f},"*len(classes)).format(*pcs))
-    print(("mae = "+"{:.6f},"*len(classes)).format(*mae))
+    print("mean P.C. = ", np.nanmean(pcs))
+    print(("S.C. = "+"{:.6f},"*len(classes)).format(*scs))
+    print("mean S.C. = ", np.nanmean(scs))
+    print(("MAE = "+"{:.6f},"*len(classes)).format(*mae))
     print("mmae = ", np.nanmean(mae))
+    print(("STD = "+"{:.6f},"*len(classes)).format(*std))
+    print("mstd = ", np.nanmean(std))
+
+    print('copy paste')
+    print(("{:.6f},"*len(classes)).format(*pcs))
+    print(("{:.6f},"*len(classes)).format(*scs))
+    print(("{:.6f},"*len(classes)).format(*mae))
+    print(("{:.6f},"*len(classes)).format(*std))
 
 def main():
     # parse options
@@ -86,6 +101,7 @@ def main():
     # load the dataset
     dataloader = data.create_dataloader(opt)
 
+    #net = IOUwConfNetBaseline(num_cls=opt.label_nc)
     net = IOUwConfNet(num_cls=opt.label_nc)
     net.load_state_dict(torch.load(opt.model_path))
     net.eval()
@@ -158,11 +174,11 @@ def main():
         #os.makedirs(opt.metric_pred_dir, exist_ok=True)
         #with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
         #    json.dump(metric, f)
-    #scores = metrics.get_scores(split="val")
-    #logs_dict = {}
-    #for s in scores:
-    #    logs_dict[s] = scores[s]
-    #print(logs_dict)
+    scores = metrics.get_scores(split="val")
+    logs_dict = {}
+    for s in scores:
+        logs_dict[s] = scores[s]
+    print(logs_dict)
 
     with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
         pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
