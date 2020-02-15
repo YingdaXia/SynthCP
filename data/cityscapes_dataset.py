@@ -34,7 +34,9 @@ class CityscapesDataset(Pix2pixDataset):
         phase = 'val' if opt.phase == 'test' else 'train'
 
         if opt.eval_spade:
-            label_dir = os.path.join(root, 'gtFinePred', phase)
+            label_dir = os.path.join(root, 'gtFinePredProb_hr', phase)
+            #### FOR PREVIOUS EXPERIMENTS
+            #label_dir = os.path.join(root, 'gtFinePred', phase)
         else:
             label_dir = os.path.join(root, 'gtFine', phase)
         label_paths_all = make_dataset(label_dir, recursive=True)

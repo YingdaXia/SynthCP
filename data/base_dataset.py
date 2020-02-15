@@ -46,7 +46,8 @@ def get_params(opt, size):
 
 def get_transform(opt, params, method=Image.BICUBIC, normalize=True, toTensor=True, for_VGG=False, for_label=False):
     transform_list = []
-    if not for_label:
+    #if not for_label:
+    if True:
         if 'resize' in opt.preprocess_mode:
             osize = [opt.load_size, opt.load_size]
             transform_list.append(transforms.Resize(osize, interpolation=method))

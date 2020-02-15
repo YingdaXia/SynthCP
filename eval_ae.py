@@ -29,6 +29,7 @@ dataloader = data.create_dataloader(opt)
 
 # create trainer for our model
 trainer = Pix2PixTrainer(opt)
+trainer.pix2pix_model.eval()
 
 # create tool for counting iterations
 iter_counter = IterationCounter(opt, len(dataloader))
@@ -46,22 +47,15 @@ for i, data_i in enumerate(dataloader, start=iter_counter.epoch_iter):
         if i % opt.D_steps_per_G == 0:
             trainer.run_generator_one_step(data_i, backward=False)
 
-        # train discriminator
-        trainer.run_discriminator_one_step(data_i, backward=False)
-
-    # Visualizations
-    losses = trainer.get_latest_losses()
-    visualizer.record_losses(iter_counter.epoch_iter, losses)
-
     # Save reconstructed image
-    img_rec_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitRec')
+    img_rec_path = data_i['path'][0].replace('leftImg8bit', opt.rec_save_suffix)
     os.makedirs(os.path.dirname(img_rec_path), exist_ok=True)
     Image.fromarray(tensor2im(trainer.get_latest_generated()[0])).save(img_rec_path)
 
-    visuals = OrderedDict([('input_label', data_i['label']),
-                           ('synthesized_image', trainer.get_latest_generated()),
-                           ('real_image', data_i['image'])])
-    visualizer.display_current_results(visuals, epoch, iter_counter.total_steps_so_far)
+    #visuals = OrderedDict([('input_label', data_i['label']),
+    #                       ('synthesized_image', trainer.get_latest_generated()),
+    #                       ('real_image', data_i['image'])])
+    #visualizer.display_current_results(visuals, epoch, iter_counter.total_steps_so_far)
 
-visualizer.dump_record_losses()
+#visualizer.dump_record_losses()
 print('Evaluating was successfully finished.')

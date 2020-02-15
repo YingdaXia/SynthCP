@@ -152,7 +152,10 @@ class VGG16_FCN8s(nn.Module):
             vgg_head_param = next(vgg_head_params)
             vgg_head_param.data = v.view(vgg_head_param.size())
 
-
+    def set_dropout_train_mode(self):
+        for m in self.modules():
+            if isinstance(m, nn.Dropout2d):
+                m.train()
     
 
 

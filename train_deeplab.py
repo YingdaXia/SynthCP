@@ -10,10 +10,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from PIL import Image
-from options.fcn_options import BaseOptions
+from options.deeplab_options import BaseOptions
 from torch.utils.tensorboard import SummaryWriter
 
-from models.fcn8 import VGG16_FCN8s
+from models.deeplab import Deeplab
 import data
 
 def to_tensor_raw(im):
@@ -48,7 +48,7 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = VGG16_FCN8s(num_cls=opt.label_nc)
+net = Deeplab(num_classes=opt.label_nc, init_weights='DeepLab_init.pth', restore_from=None, phase='train')
 net.cuda()
 transform = []
 target_transform = []
@@ -64,6 +64,7 @@ while True:
     for i, data_i in enumerate(dataloader):
         # Clear out gradients
         optimizer.zero_grad()
+        net.adjust_learning_rate(opt.lr, optimizer, iteration)
 
         # load data/label
         #im = make_variable(im, requires_grad=False)

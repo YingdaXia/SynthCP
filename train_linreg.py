@@ -10,11 +10,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from PIL import Image
-from options.fcn_options import BaseOptions
-from torch.utils.tensorboard import SummaryWriter
+from options.iounet_options import BaseOptions
 
-from models.fcn8 import VGG16_FCN8s
 import data
+import pdb
 
 def to_tensor_raw(im):
     return torch.from_numpy(np.array(im, np.int64, copy=False))
@@ -39,6 +38,18 @@ def supervised_loss(score, label, weights=None):
     loss = loss_fn_(F.log_softmax(score), label)
     return loss
 
+class LinearRegression(nn.Module):
+
+    def __init__(self, num_cls=19):
+        super(LinearRegression, self).__init__()
+        self.num_cls = num_cls
+        self.regress = nn.Linear(self.num_cls, self.num_cls)
+
+    def forward(self, entropy):
+        x = self.regress(entropy)
+
+        return x
+
 # parse options
 opt = BaseOptions().parse()
 
@@ -48,15 +59,15 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = VGG16_FCN8s(num_cls=opt.label_nc)
+net = nn.Linear(opt.label_nc, opt.label_nc)
 net.cuda()
 transform = []
 target_transform = []
 
-optimizer = torch.optim.SGD(net.parameters(), lr=opt.lr, momentum=0.99,
-                        weight_decay=0.0005)
-#scheduler= torch.optim.lr_schedulre.MultiStepLR(optimizer, milestones=[30,80], gamma=0.1)
-writer = SummaryWriter(log_dir=opt.checkpoints_dir)
+#optimizer = torch.optim.SGD(net.parameters(), lr=opt.lr, momentum=0.99,
+#                        weight_decay=0.0005)
+
+optimizer = torch.optim.Adam(net.parameters(), lr=opt.lr)
 
 iteration = 0
 losses = deque(maxlen=10)
@@ -70,31 +81,35 @@ while True:
         #label = make_variable(label, requires_grad=False)
 
         # forward pass and compute loss
-        im = data_i['image_seg'].cuda()
-        label = data_i['label'].cuda().long().squeeze(1)
-        preds = net(im)
-        loss = torch.nn.CrossEntropyLoss(ignore_index=opt.label_nc)(preds, label)
+
+        entropy = data_i['entropy'].cuda()
+        iou_label = data_i['iou'].cuda()
+        prob = data_i['prob'].cuda()
+
+        pred_iou = net(entropy)
+
+        valid=data_i['valid'].cuda()
+        loss_iou = torch.nn.SmoothL1Loss(reduce=False)(pred_iou, iou_label / 100)
+        # mask out invalid terms
+        loss_iou *= valid.float()
+        loss_iou = loss_iou.mean()
 
         # backward pass
+        loss = loss_iou
         loss.backward()
-        writer.add_scalar('Loss/train', loss.item(), iteration)
-        writer.add_scalar('Lr/train', optimizer.param_groups[0]['lr'], iteration)
-        losses.append(loss.item())
 
         # step gradients
         optimizer.step()
 
         # log results
         if iteration % 10 == 0:
-            print('Iteration {}:\t{}'.format(iteration, np.mean(losses)))
+            print('Iteration {}:\tiou loss: {}'.format(iteration, loss_iou.item()))
         iteration += 1
 
         if iteration % opt.snapshot == 0:
-            torch.save(net.state_dict(), os.path.join(opt.checkpoints_dir, '{}-iter{}.pth'.format(opt.name, iteration)))
+            torch.save(net.state_dict(), os.path.join(opt.checkpoints_dir, opt.name, 'iter{}.pth'.format(iteration)))
         if iteration >= opt.niter:
             print('Optimization complete.')
             break
     if iteration >= opt.niter:
         break
-
-    #scheduler.step()

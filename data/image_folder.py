@@ -22,15 +22,18 @@ IMG_EXTENSIONS = [
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
+def is_npz_file(filename):
+    return filename.endswith('.npz')
+
 def is_json_file(filename):
     return filename.endswith('.json')
 
-def make_dataset_rec(dir, images):
+def make_dataset_rec(dir, images, is_target_file=is_image_file):
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
 
     for root, dnames, fnames in sorted(os.walk(dir, followlinks=True)):
         for fname in fnames:
-            if is_image_file(fname):
+            if is_target_file(fname):
                 path = os.path.join(root, fname)
                 images.append(path)
 
@@ -45,7 +48,7 @@ def make_iou_dataset(dir, recursive=False):
                 ious.append(path)
     return ious
 
-def make_dataset(dir, recursive=False, read_cache=False, write_cache=False):
+def make_dataset(dir, recursive=False, read_cache=False, write_cache=False, is_target_file=is_image_file):
     images = []
 
     if read_cache:
@@ -56,13 +59,13 @@ def make_dataset(dir, recursive=False, read_cache=False, write_cache=False):
                 return images
 
     if recursive:
-        make_dataset_rec(dir, images)
+        make_dataset_rec(dir, images, is_target_file=is_target_file)
     else:
         assert os.path.isdir(dir) or os.path.islink(dir), '%s is not a valid directory' % dir
 
         for root, dnames, fnames in sorted(os.walk(dir)):
             for fname in fnames:
-                if is_image_file(fname):
+                if is_target_file(fname):
                     path = os.path.join(root, fname)
                     images.append(path)
 

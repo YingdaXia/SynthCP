@@ -62,7 +62,7 @@ print(' '.join(sys.argv))
 dataloader = data.create_dataloader(opt)
 
 net = VGG16_FCN8s(num_cls=opt.label_nc, pretrained=False)
-net.load_state_dict(torch.load(opt.model_path))
+net.load_state_dict(torch.load(opt.model_path, map_location='cuda:{}'.format(opt.gpu_ids[0])))
 net.cuda()
 net.eval()
 
@@ -79,14 +79,16 @@ for i, data_i in iterations:
     score = net(im).data
     _, preds = torch.max(score, 1)
     #pdb.set_trace()
-    pred_path = data_i['label_path'][0].replace('gtFine', 'gtFinePredProb')
+
+    pred_path = data_i['label_path'][0].replace('gtFine', 'gtFinePredProb_hr')
     os.makedirs(os.path.dirname(pred_path), exist_ok=True)
     Image.fromarray(np.uint8(preds.cpu().numpy()[0])).save(pred_path)
     np.savez_compressed(pred_path, prob=score.cpu().numpy()[0], label=label.numpy()[0].astype(np.uint8))
 
-    img_transformed_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitResize')
+    img_transformed_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitResize_hr')
     os.makedirs(os.path.dirname(img_transformed_path), exist_ok=True)
     Image.fromarray(tensor2im(data_i['image'][0])).save(img_transformed_path)
+
 
     hist = fast_hist(label.numpy().flatten(),
             preds.cpu().numpy().flatten(),
@@ -96,9 +98,14 @@ for i, data_i in iterations:
         np.nanmean(iu), fwIU, acc_overall, np.nanmean(acc_percls))})
     metric = [iu.tolist(), pix_percls.tolist(), fwIU, acc_overall, acc_percls.tolist()]
     metrics.append(metric)
-    os.makedirs('metrics_trainccv', exist_ok=True)
-    with open(os.path.join('metrics_trainccv', os.path.splitext(os.path.basename(data_i['path'][0]))[0] + '.json'), 'w') as f:
+    if opt.phase == 'train':
+        output_dir = 'metrics_hr_trainccv'
+    else:
+        output_dir = 'metrics_hr_val'
+    os.makedirs(output_dir, exist_ok=True)
+    with open(os.path.join(output_dir, os.path.splitext(os.path.basename(data_i['path'][0]))[0] + '.json'), 'w') as f:
         json.dump(metric, f)
+
 print()
 #with open(os.path.join('.', 'metrics.json'), 'w') as f:
 #    json.dump(metrics, f)

@@ -24,8 +24,8 @@ class Pix2PixModel(torch.nn.Module):
 
         self.netG, self.netD, self.netE = self.initialize_networks(opt)
 
-        if opt.joint_train:
-            self.netS = self.initialize_fcn(opt)
+        #if opt.joint_train:
+        #    self.netS = self.initialize_fcn(opt)
 
         # set loss functions
         if opt.isTrain:
@@ -42,33 +42,33 @@ class Pix2PixModel(torch.nn.Module):
     # can't parallelize custom functions, we branch to different
     # routines based on |mode|.
     def forward(self, data, mode):
-        if self.opt.joint_train:
-            input_semantics, real_image, image_seg = self.preprocess_input(data, is_joint_train=True)
-        else:
-            input_semantics, real_image = self.preprocess_input(data)
+        #if self.opt.joint_train:
+        #    input_semantics, real_image, image_seg = self.preprocess_input(data, is_joint_train=True)
+        #else:
+        input_semantics, real_image = self.preprocess_input(data)
 
         if mode == 'generator':
-            if self.opt.joint_train:
-                pred_seg = self.netS(image_seg)
-                generator_input = torch.nn.Softmax(dim=1)(pred_seg)
-                if 'label' in data: # only apply segmentation loss to source data
-                    loss_seg = torch.nn.CrossEntropyLoss(ignore_index=self.opt.label_nc)(pred_seg, data['label'].cuda().squeeze(1).long())
-            else:
-                generator_input = input_semantics
+            #if self.opt.joint_train:
+            #    pred_seg = self.netS(image_seg)
+            #    generator_input = torch.nn.Softmax(dim=1)(pred_seg)
+            #    if 'label' in data: # only apply segmentation loss to source data
+            #        loss_seg = torch.nn.CrossEntropyLoss(ignore_index=self.opt.label_nc)(pred_seg, data['label'].cuda().squeeze(1).long())
+            #else:
+            generator_input = input_semantics
             g_loss, generated = self.compute_generator_loss(
                 generator_input, real_image)
-            if self.opt.joint_train and 'label' in data:
-                g_loss['Seg'] = loss_seg
+            #if self.opt.joint_train and 'label' in data:
+            #    g_loss['Seg'] = loss_seg
             return g_loss, generated, generator_input # also return segmentation result for visualization
         elif mode == 'discriminator':
-            if self.opt.joint_train:
-                with torch.no_grad():
-                    pred_seg = self.netS(image_seg)
-                    generator_input = torch.nn.Softmax(dim=1)(pred_seg)
-                generator_input = generator_input.detach()
-                generator_input.requires_grad_()
-            else:
-                generator_input = input_semantics
+            #if self.opt.joint_train:
+            #    with torch.no_grad():
+            #        pred_seg = self.netS(image_seg)
+            #        generator_input = torch.nn.Softmax(dim=1)(pred_seg)
+            #    generator_input = generator_input.detach()
+            #    generator_input.requires_grad_()
+            #else:
+            generator_input = input_semantics
             d_loss = self.compute_discriminator_loss(
                 generator_input, real_image)
             return d_loss
@@ -88,8 +88,8 @@ class Pix2PixModel(torch.nn.Module):
         G_params += list(self.netG.parameters())
         if opt.use_vae:
             G_params += list(self.netE.parameters())
-        if opt.joint_train:
-            G_params += list(self.netS.parameters())
+        #if opt.joint_train:
+        #    G_params += list(self.netS.parameters())
         if opt.isTrain:
             D_params = list(self.netD.parameters())
 
@@ -110,8 +110,8 @@ class Pix2PixModel(torch.nn.Module):
         util.save_network(self.netD, 'D', epoch, self.opt)
         if self.opt.use_vae:
             util.save_network(self.netE, 'E', epoch, self.opt)
-        if self.opt.joint_train:
-            util.save_network(self.netS, 'S', epoch, self.opt)
+        #if self.opt.joint_train:
+        #    util.save_network(self.netS, 'S', epoch, self.opt)
 
     ############################################################################
     # Private helper methods
@@ -122,7 +122,8 @@ class Pix2PixModel(torch.nn.Module):
         netD = networks.define_D(opt) if opt.isTrain else None
         netE = networks.define_E(opt) if opt.use_vae else None
 
-        if not opt.isTrain or opt.continue_train or opt.joint_train:
+        #if not opt.isTrain or opt.continue_train or opt.joint_train:
+        if not opt.isTrain or opt.continue_train:
             netG = util.load_network(netG, 'G', opt.which_epoch, opt)
             if opt.isTrain:
                 netD = util.load_network(netD, 'D', opt.which_epoch, opt)
@@ -181,13 +182,13 @@ class Pix2PixModel(torch.nn.Module):
     def compute_generator_loss(self, input_semantics, real_image):
         G_losses = {}
 
-        #fake_image, KLD_loss = self.generate_fake(
-        #    input_semantics, real_image, compute_kld_loss=self.opt.use_vae)
         fake_image, KLD_loss = self.generate_fake(
-            input_semantics, real_image, compute_kld_loss=False)
+            input_semantics, real_image, compute_kld_loss=self.opt.use_vae)
+        #fake_image, KLD_loss = self.generate_fake(
+        #    input_semantics, real_image, compute_kld_loss=False)
 
-        #if self.opt.use_vae:
-        #    G_losses['KLD'] = KLD_loss
+        if self.opt.use_vae:
+            G_losses['KLD'] = KLD_loss
 
         pred_fake, pred_real = self.discriminate(
             input_semantics, fake_image, real_image)
@@ -232,9 +233,11 @@ class Pix2PixModel(torch.nn.Module):
 
     def encode_z(self, real_image):
         mu, logvar = self.netE(real_image)
-        #z = self.reparameterize(mu, logvar)
-        #z = torch.cat((mu, logvar), dim=1)
-        return mu, mu, logvar
+        if self.opt.vae_test:
+            z = mu
+        else:
+            z = self.reparameterize(mu, logvar)
+        return z, mu, logvar
 
     def generate_fake(self, input_semantics, real_image, compute_kld_loss=False):
         z = None

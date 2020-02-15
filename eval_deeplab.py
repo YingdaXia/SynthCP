@@ -11,9 +11,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from PIL import Image
-from options.fcn_options import BaseOptions
+from options.deeplab_options import BaseOptions
 
-from models.fcn8 import VGG16_FCN8s
+from models.deeplab import Deeplab
 import data
 import pdb
 
@@ -59,7 +59,7 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = VGG16_FCN8s(num_cls=opt.label_nc, pretrained=False)
+net = Deeplab(num_classes=opt.label_nc, init_weights=None, restore_from=None, phase='train')
 net.load_state_dict(torch.load(opt.model_path))
 net.cuda()
 net.eval()
@@ -77,9 +77,9 @@ for i, data_i in iterations:
     score = net(im).data
     _, preds = torch.max(score, 1)
 
-    #pred_path = data_i['label_path'][0].replace('gtFine', 'gtFinePred')
-    #os.makedirs(os.path.dirname(pred_path), exist_ok=True)
-    #Image.fromarray(np.uint8(preds.cpu().numpy()[0])).save(pred_path)
+    pred_path = data_i['label_path'][0].replace('gtFine', 'gtFinePred')
+    os.makedirs(os.path.dirname(pred_path), exist_ok=True)
+    Image.fromarray(np.uint8(preds.cpu().numpy()[0])).save(pred_path)
     #pdb.set_trace()
 
     hist += fast_hist(label.numpy().flatten(),

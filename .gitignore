@@ -6,3 +6,5 @@ results/
 *.zip
 *.pkl
 *.pyc
+*local.py
+*local.sh
