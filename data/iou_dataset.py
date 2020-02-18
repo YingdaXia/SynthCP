@@ -61,9 +61,9 @@ class IOUDataset(BaseDataset):
 
         prob_map, label_map = np.load(pred_path)['prob'], np.load(pred_path)['label']
         prob_map = torch.from_numpy(prob_map)
-        prob_map = torch.nn.functional.interpolate(prob_map.unsqueeze(0), (h, w), mode='bilinear').squeeze(0)
         label_map = torch.from_numpy(label_map)
-        label_map = torch.nn.functional.interpolate(label_map.unsqueeze(0).unsqueeze(0).float(), (h, w)).squeeze().byte()
+        #prob_map = torch.nn.functional.interpolate(prob_map.unsqueeze(0), (h, w), mode='bilinear').squeeze(0)
+        #label_map = torch.nn.functional.interpolate(label_map.unsqueeze(0).unsqueeze(0).float(), (h, w)).squeeze().byte()
 
         image_src_tensor = self.transform(image_src)
         image_rec_tensor = self.transform(image_rec)

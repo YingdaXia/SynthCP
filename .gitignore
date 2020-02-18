@@ -8,3 +8,4 @@ results/
 *.pyc
 *local.py
 *local.sh
+metrics*/

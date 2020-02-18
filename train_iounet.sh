@@ -1,10 +1,10 @@
 GPUs=$1
-python train_iounet_v2.py --name cityscapes_iouconf_hce2_1 --dataset_mode iou \
-                --dataroot mnt/sdd/yingda/data/alarmseg/cityscapes \
-                --image_src_dir /mnt/sdd/yingda/data/alarmseg/cityscapes/leftImg8bitResize/train \
-                --image_rec_dir /mnt/sdd/yingda/data/alarmseg/cityscapes/leftImg8bitRec/train \
-                --iou_dir /mnt/sdd/yingda/alarmseg-spade/metrics_trainccv \
-                --pred_dir /mnt/sdd/yingda/data/alarmseg/cityscapes/gtFinePredProb/train \
+python train_iounet_v2.py --name cityscapes_iouconf_hce2_1_concatInput_concatNet --dataset_mode iou \
+                --dataroot ./cityscapes \
+                --image_src_dir ./cityscapes/leftImg8bitResize/train \
+                --image_rec_dir ./cityscapes/leftImg8bitRecNoVAE50/train \
+                --iou_dir ./metrics_trainccv \
+                --pred_dir ./cityscapes/gtFinePredProb/train \
                 --label_nc 19 --no_instance \
                 --use_vae \
                 --vgg_norm \
@@ -12,7 +12,6 @@ python train_iounet_v2.py --name cityscapes_iouconf_hce2_1 --dataset_mode iou \
                 --lr 2e-4 \
                 --niter 20000 \
                 --snapshot 5000 \
-                --gpu_ids $GPUs
+                --gpu_ids $GPUs --nThreads 8
 
-                #--image_src_dir /data/yzhang/cityscapes/SrcImgResize/train \
-                #--image_rec_dir /data/yzhang/cityscapes/RecImgResize/train \
+                #--image_rec_dir ./cityscapes/leftImg8bitRecVAE256E300/train \

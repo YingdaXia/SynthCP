@@ -78,6 +78,10 @@ while True:
         prob = data_i['prob'].cuda()
         label_map = data_i['label_map'].cuda()
 
+        h, w = im_rec.shape[-2:]
+        #prob = torch.nn.functional.interpolate(prob, (h, w), mode='bilinear')
+        #label_map = torch.nn.functional.interpolate(label_map.unsqueeze(0).float(), (h, w)).byte()
+
         correct_map = (prob.argmax(dim=1).long() == label_map.long()).float()
 
         pred_iou, conf = net(prob, im_src, im_rec)
