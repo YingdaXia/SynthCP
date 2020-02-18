@@ -14,7 +14,7 @@ import random
 import json
 import pdb
 
-from data.image_folder import make_dataset, make_iou_dataset
+from data.image_folder import make_dataset, make_iou_dataset, is_npz_file
 
 def resize(img, w, h, method=Image.BICUBIC):
     return img.resize((w, h), method)
@@ -48,7 +48,7 @@ class IOUDataset(BaseDataset):
         image_src_path = self.image_src_paths[index]
         image_rec_path = self.image_rec_paths[index]
         label_path = self.label_paths[index]
-        pred_path = self.pred_paths[index] + '.npz'
+        pred_path = self.pred_paths[index] #+ '.npz'
         assert self.paths_match(label_path, image_src_path, image_rec_path), \
             "The label_path %s, image_src_path %s and image_rec_path %s don't match." % \
             (label_path, image_src_path, image_rec_path)
@@ -87,7 +87,7 @@ class IOUDataset(BaseDataset):
         image_src_paths = make_dataset(opt.image_src_dir, recursive=True)
         image_rec_paths = make_dataset(opt.image_rec_dir, recursive=True)
         label_paths = make_iou_dataset(opt.iou_dir, recursive=True)
-        pred_paths = make_dataset(opt.pred_dir, recursive=True)
+        pred_paths = make_dataset(opt.pred_dir, recursive=True, is_target_file=is_npz_file)
         return image_src_paths, image_rec_paths, label_paths, pred_paths
 
     def paths_match(self, path1, path2, path3):
