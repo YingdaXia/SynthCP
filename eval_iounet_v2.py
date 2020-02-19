@@ -101,8 +101,8 @@ def main():
     # load the dataset
     dataloader = data.create_dataloader(opt)
 
-    #net = IOUwConfNetBaseline(num_cls=opt.label_nc)
-    net = IOUwConfNet(num_cls=opt.label_nc)
+    net = IOUwConfNetBaseline(num_cls=opt.label_nc)
+    #net = IOUwConfNet(num_cls=opt.label_nc)
     net.load_state_dict(torch.load(opt.model_path))
     net.eval()
     net.cuda()
@@ -181,8 +181,8 @@ def main():
         logs_dict[s] = scores[s]
     print(logs_dict)
 
-    #with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
-    #    pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
+    with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
+        pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
 
     eval_alarm_metrics(pred_ious, real_ious)
 

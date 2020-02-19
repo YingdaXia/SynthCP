@@ -80,12 +80,12 @@ for i, data_i in iterations:
     _, preds = torch.max(score, 1)
     #pdb.set_trace()
 
-    pred_path = data_i['label_path'][0].replace('gtFine', 'gtFinePredProb_dl_hr')
+    pred_path = osp.join(opt.eval_output_dir, data_i['label_path'][0].replace('gtFine', 'gtFinePredProb'))
     os.makedirs(os.path.dirname(pred_path), exist_ok=True)
     Image.fromarray(np.uint8(preds.cpu().numpy()[0])).save(pred_path)
     np.savez_compressed(pred_path, prob=score.cpu().numpy()[0], label=label.numpy()[0].astype(np.uint8))
 
-    img_transformed_path = data_i['path'][0].replace('leftImg8bit', 'leftImg8bitResize_dl_hr')
+    img_transformed_path = osp.join(opt.eval_output_dir, data_i['path'][0].replace('leftImg8bit', 'leftImg8bitResize'))
     os.makedirs(os.path.dirname(img_transformed_path), exist_ok=True)
     Image.fromarray(tensor2im(data_i['image'][0])).save(img_transformed_path)
 
@@ -99,9 +99,9 @@ for i, data_i in iterations:
     metric = [iu.tolist(), pix_percls.tolist(), fwIU, acc_overall, acc_percls.tolist()]
     metrics.append(metric)
     if opt.phase == 'train':
-        output_dir = 'metrics_dl_hr_trainccv'
+        output_dir = osp.join(opt.eval_output_dir, 'metrics_trainccv')
     else:
-        output_dir = 'metrics_dl_hr_val'
+        output_dir = osp.join(opt.eval_output_dir, 'metrics_val')
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, os.path.splitext(os.path.basename(data_i['path'][0]))[0] + '.json'), 'w') as f:
         json.dump(metric, f)

@@ -83,6 +83,7 @@ class BaseOptions():
         parser.add_argument('--eval_losses_dir', type=str, default='.', help='dir to save evaluation losses')
         parser.add_argument('--eval_spade', action='store_true', help='when eval SPADE, input should be gtFinePred')
         parser.add_argument('--rec_save_suffix', type=str, default='leftImg8bitRec')
+        parser.add_argument('--eval_output_dir', type=str, default='outputs', help='dir to save evaluation outputs')
         parser.add_argument('--vae_test', action='store_true', help='if specified, no reparametric')
 
         self.initialized = True

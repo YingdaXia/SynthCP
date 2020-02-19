@@ -61,6 +61,7 @@ class BaseOptions():
         parser.add_argument('--vgg_norm', action='store_true', help='vgg_norm')
 
         parser.add_argument('--model_path', type=str, default='')
+        parser.add_argument('--eval_output_dir', type=str, default='outputs', help='dir to save evaluation outputs')
 
         # for evaluating AE/SPADE
         parser.add_argument('--eval_losses_dir', type=str, default='.', help='dir to save evaluation losses')
