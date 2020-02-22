@@ -12,7 +12,7 @@ import torchvision
 from PIL import Image
 from options.iounet_options import BaseOptions
 
-from models.resnet import IOUwConfNet, IOUwConfNetBaseline
+from models.fcn8_self_confid import VGG16_FCN8s_SelfConfid
 import anom_utils
 from metric import Metrics
 import data
@@ -102,8 +102,10 @@ def main():
     dataloader = data.create_dataloader(opt)
 
     #net = IOUwConfNetBaseline(num_cls=opt.label_nc)
-    net = IOUwConfNet(num_cls=opt.label_nc)
-    net.load_state_dict(torch.load(opt.model_path))
+    #net = IOUwConfNet(num_cls=opt.label_nc)
+
+    net = VGG16_FCN8s_SelfConfid(num_cls=opt.label_nc, pretrained=False)
+    net.load_state_dict(torch.load(opt.model_path, map_location='cuda:{}'.format(opt.gpu_ids[0])))
     net.eval()
     net.cuda()
     transform = []
@@ -128,7 +130,6 @@ def main():
 
         # forward pass and compute loss
         im_src = data_i['image_src'].cuda()
-        im_rec = data_i['image_rec'].cuda()
 
         iou_label = data_i['iou'].cuda()
         prob = data_i['prob'].cuda()
@@ -137,7 +138,8 @@ def main():
         max_prob, pred = torch.nn.Softmax(dim=1)(prob).max(dim=1)
 
         with torch.no_grad():
-            pred_iou, conf = net(prob, im_src, im_rec)
+            _, conf = net(im_src)
+        #pdb.set_trace()
 
         len_steps += 1 * 256 * 512
         len_data += 1
@@ -149,20 +151,20 @@ def main():
         label_map = label_map[label_map != 19]
 
 
-        correct_map = (pred.long() == label_map.long()).float()
+        #correct_map = (pred.long() == label_map.long()).float()
         #tensor_max = torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
         #tensor_min = -1.0 * torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
         #conf = tensor_max * correct_map + tensor_min * (1 - correct_map)
-        conf = conf + max_prob
+        #conf = conf + max_prob
         #conf = max_prob
         metrics.update(pred.long(), label_map.long(), conf)
         #metrics.update(pred.long(), label_map.long(), max_prob)
 
-        valid=data_i['valid'][0].cpu().numpy()
-        real_iou_valid = iou_label[0].cpu().numpy() / 100
-        real_iou_valid[valid==0] = np.nan
-        pred_ious.append(pred_iou[0].cpu().numpy())
-        real_ious.append(real_iou_valid)
+        #valid=data_i['valid'][0].cpu().numpy()
+        #real_iou_valid = iou_label[0].cpu().numpy() / 100
+        #real_iou_valid[valid==0] = np.nan
+        #pred_ious.append(pred_iou[0].cpu().numpy())
+        #real_ious.append(real_iou_valid)
 
         #conf_dir = os.path.join('./checkpoints', opt.name, 'confnetpred')
         #os.makedirs(conf_dir, exist_ok=True)
@@ -181,10 +183,10 @@ def main():
         logs_dict[s] = scores[s]
     print(logs_dict)
 
-    with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
-        pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
+    #with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
+    #    pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
 
-    eval_alarm_metrics(pred_ious, real_ious)
+    #eval_alarm_metrics(pred_ious, real_ious)
 
 if __name__ == '__main__':
     main()

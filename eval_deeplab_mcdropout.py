@@ -12,9 +12,9 @@ import torch.nn.functional as F
 import torchvision
 from PIL import Image
 from util.util import tensor2im
-from options.fcn_options import BaseOptions
+from options.deeplab_options import BaseOptions
 
-from models.fcn8 import VGG16_FCN8s
+from models.deeplab import Deeplab
 import data
 import json
 import pdb
@@ -61,7 +61,7 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
-net = VGG16_FCN8s(num_cls=opt.label_nc, pretrained=False)
+net = Deeplab(num_classes=opt.label_nc, init_weights=None, restore_from=None, phase='train')
 net.load_state_dict(torch.load(opt.model_path, map_location='cuda:{}'.format(opt.gpu_ids[0])))
 net.cuda()
 net.eval()

@@ -74,7 +74,8 @@ class BaseOptions():
         parser.add_argument('--iou_dir', type=str, default='metrics', help='directory of ious for training IOUNet')
         parser.add_argument('--pred_dir', type=str, default='/mnt/sdd/yingda/data/alarmseg/cityscapes/gtFinePredProb/train')
         parser.add_argument('--entropy_dir', type=str, default='metrics_trainccv_mcdropout')
-        parser.add_argument('--conf_map_dir', type=str, default='gtFinePred_hr_mcdropout')
+        parser.add_argument('--conf_map_dir', type=str, default='gtFinePred_mcdropout')
+        parser.add_argument('--with_conf_map', action='store_true', help='whether use conf map')
         # for evaluating IOUNet
         parser.add_argument('--eval_iter', type=int, default=0)
         self.initialized = True

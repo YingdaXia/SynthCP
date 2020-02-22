@@ -103,11 +103,12 @@ class Bottleneck(nn.Module):
 
 class ASPP(nn.Module):
 
-    def __init__(self, C, depth, num_classes, conv=nn.Conv2d, norm=nn.BatchNorm2d, momentum=0.0003, mult=1):
+    def __init__(self, C, depth, num_classes, conv=nn.Conv2d, norm=nn.BatchNorm2d, momentum=0.0003, mult=1, phase='train'):
         super(ASPP, self).__init__()
         self._C = C
         self._depth = depth
         self._num_classes = num_classes
+        self.phase = phase
 
         self.global_pooling = nn.AdaptiveAvgPool2d(1)
         self.relu = nn.ReLU(inplace=True)
@@ -130,6 +131,7 @@ class ASPP(nn.Module):
         self.conv2 = conv(depth * 5, depth, kernel_size=1, stride=1,
                                bias=False)
         self.bn2 = norm(depth, momentum)
+        self.dropout = nn.Dropout2d(p=0.5)
         self.conv3 = nn.Conv2d(depth, num_classes, kernel_size=1, stride=1)
 
     def forward(self, x):
@@ -155,6 +157,8 @@ class ASPP(nn.Module):
         x = self.conv2(x)
         x = self.bn2(x)
         x = self.relu(x)
+        if self.phase == 'test':
+            x = self.dropout(x)
         x = self.conv3(x)
 
         return x
@@ -195,8 +199,8 @@ class ResNet101(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         #self.layer5 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
 
-        self.aspp = ASPP(512 * block.expansion, 256, num_classes)
-        
+        self.aspp = ASPP(512 * block.expansion, 256, num_classes, phase=phase)
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
@@ -302,6 +306,10 @@ class ResNet101(nn.Module):
         loss = F.cross_entropy(predict, target, weight=weight, size_average=size_average)
         return loss
 
+    def set_dropout_train_mode(self):
+        for m in self.modules():
+            if isinstance(m, nn.Dropout2d):
+                m.train()
 
 def Deeplab(num_classes=21, init_weights=None, restore_from=None, phase='train'):
     model = ResNet101(Bottleneck, [3, 4, 23, 3], num_classes, phase)

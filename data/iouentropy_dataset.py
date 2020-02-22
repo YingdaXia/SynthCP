@@ -19,20 +19,23 @@ from data.image_folder import make_dataset, make_iou_dataset, is_npz_file
 class IOUEntropyDataset(BaseDataset):
 
     def initialize(self, opt):
+        self.with_conf_map = False
         image_src_paths, image_rec_paths, label_paths, pred_paths, entropy_paths, conf_map_paths = self.get_paths(opt)
         util.natural_sort(image_src_paths)
         util.natural_sort(image_rec_paths)
         util.natural_sort(label_paths)
         util.natural_sort(pred_paths)
         util.natural_sort(entropy_paths)
-        util.natural_sort(conf_map_paths)
+        if opt.with_conf_map:
+            self.with_conf_map = opt.with_conf_map
+            util.natural_sort(conf_map_paths)
+            self.conf_map_paths = conf_map_paths
 
         self.image_src_paths = image_src_paths
         self.image_rec_paths = image_rec_paths
         self.label_paths = label_paths
         self.entropy_paths = entropy_paths
         self.pred_paths = pred_paths
-        self.conf_map_paths = conf_map_paths
         print(len(label_paths))
 
         self.transform = torchvision.transforms.Compose([
@@ -50,7 +53,11 @@ class IOUEntropyDataset(BaseDataset):
         image_rec_path = self.image_rec_paths[index]
         label_path = self.label_paths[index]
         entropy_path = self.entropy_paths[index]
-        conf_map_path = self.conf_map_paths[index]
+        if self.with_conf_map:
+            conf_map_path = self.conf_map_paths[index]
+            conf_map = np.load(conf_map_path)['confidence_map']
+        else:
+            conf_map = 0
         pred_path = self.pred_paths[index] + '.npz'
         assert self.paths_match(label_path, image_src_path, image_rec_path), \
             "The label_path %s, image_src_path %s and image_rec_path %s don't match." % \
@@ -63,7 +70,6 @@ class IOUEntropyDataset(BaseDataset):
 
         prob_map, label_map = np.load(pred_path)['prob'], np.load(pred_path)['label']
         prob_map = torch.from_numpy(prob_map)
-        conf_map = np.load(conf_map_path)['confidence_map']
         label_map = torch.from_numpy(label_map)
 
         image_src_tensor = self.transform(image_src)
@@ -74,7 +80,7 @@ class IOUEntropyDataset(BaseDataset):
                   'image_rec' : image_rec_tensor,
                   'iou' : torch.tensor( iou_label[0]),
                   'valid' : torch.tensor(iou_label[1]) != 0,
-                  'entropy' : torch.tensor(entropy[5][0]),
+                  'entropy' : torch.tensor(entropy[5]),
                   'image_src_path' : image_src_path,
                   'prob' : prob_map,
                   'label_map' : label_map,
@@ -89,10 +95,14 @@ class IOUEntropyDataset(BaseDataset):
 
         image_src_paths = make_dataset(opt.image_src_dir, recursive=True)
         image_rec_paths = make_dataset(opt.image_rec_dir, recursive=True)
-        conf_map_paths = make_dataset(opt.conf_map_dir, recursive=True, is_target_file=is_npz_file)
         label_paths = make_iou_dataset(opt.iou_dir, recursive=True)
         entropy_paths = make_iou_dataset(opt.entropy_dir, recursive=True)
         pred_paths = make_dataset(opt.pred_dir, recursive=True)
+        if opt.with_conf_map:
+            conf_map_paths = make_dataset(opt.conf_map_dir, recursive=True, is_target_file=is_npz_file)
+        else:
+            conf_map_paths = None
+
         return image_src_paths, image_rec_paths, label_paths, pred_paths, entropy_paths, conf_map_paths
 
     def paths_match(self, path1, path2, path3):
