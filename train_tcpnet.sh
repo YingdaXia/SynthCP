@@ -13,7 +13,7 @@ python train_tcpnet.py --name $IOUNET_NAME --dataset_mode iou \
                 --use_vae \
                 --vgg_norm \
                 --batchSize 4 \
-                --lr 2e-4 \
-                --niter 20000 \
-                --snapshot 1000 \
+                --lr 2e-5 \
+                --niter 40000 \
+                --snapshot 2000 \
                 --gpu_ids $GPUs --nThreads 8

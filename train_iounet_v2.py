@@ -97,7 +97,7 @@ while True:
         loss_conf = loss_conf * (torch.nn.Softmax(dim=1)(prob).max(dim=1, keepdim=True)[0] ** 2)
         loss_conf = loss_conf.mean()
         # backward pass
-        loss = loss_iou #+ loss_conf
+        loss = loss_iou + loss_conf
         loss.backward()
 
         # step gradients

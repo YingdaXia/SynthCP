@@ -10,6 +10,7 @@ python train_deeplab.py --name cityscapes_c19_$fold --dataset_mode cityscapes \
                 --lr 2e-4 \
                 --n_fold 4 --fold $fold \
                 --gpu_ids $GPUs \
+                --niter 50000
                 #--load_size 1024 \
                 #--crop_size 1024
 

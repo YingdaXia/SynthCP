@@ -1,7 +1,7 @@
 GPUs=$1
 eval_output_dir=$2
 IOUNET_NAME=$3
-for iter in {1000..4000..1000}
+for iter in {22000..28000..2000}
 do
 echo $iter
 python eval_tcpnet.py --name cityscapes --dataset_mode iou \

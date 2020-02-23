@@ -48,7 +48,8 @@ for i, data_i in enumerate(dataloader, start=iter_counter.epoch_iter):
             trainer.run_generator_one_step(data_i, backward=False)
 
     # Save reconstructed image
-    img_rec_path = os.path.join(opt.eval_output_dir, data_i['path'][0].replace('leftImg8bit', opt.rec_save_suffix))
+    #img_rec_path = os.path.join(opt.eval_output_dir, data_i['path'][0].replace('leftImg8bit', opt.rec_save_suffix))
+    img_rec_path = data_i['path'][0].replace('leftImg8bit', opt.rec_save_suffix)
     os.makedirs(os.path.dirname(img_rec_path), exist_ok=True)
     Image.fromarray(tensor2im(trainer.get_latest_generated()[0])).save(img_rec_path)
 
