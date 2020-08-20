@@ -1,12 +1,22 @@
-REC_PATH=leftImg8bitRecNew200
-#REC_PATH=leftImg8bitRec
+#REC_PATH=leftImg8bitRecNew200
+REC_PATH=leftImg8bitRec
+#REC_PATH=leftImg8bitRecVAE256E200
+#REC_PATH=rec_pix2pixhd
 #EXP_NAME=fcn_lr
-#IOUNET_NAME=cityscapes_iouconf_hce2_1_concatInput_concatNet #_newspade
+#IOUNET_NAME=cityscapes_iouconf_hce2_1_concatInput_concatNet_10iouloss #_more #_newspade
+#IOUNET_NAME=cityscapes_iouconf_hce2_1_concatInput_concatNet #_more #_newspade
+#IOUNET_NAME=cityscapes_iouconf_hce2_1_baseline_reproduce2 #_more #_newspade
+#IOUNET_NAME=cityscapes_iou_hce2_1_concatInput_concatNet #_more #_newspade
+#IOUNET_NAME=cityscapes_conf_hce2_1_concatInput_concatNet #_more #_newspade
+#IOUNET_NAME=cityscapes_iouconf_hce2_1_concatInput_concatNet_p2phd #_more #_newspade
 
 EXP_NAME=deeplab_lr
-IOUNET_NAME=cityscapes_iouconf_hce2_1_concatInput_concatNet_dl_newspade
-ln -s `pwd`/cityscapes/leftImg8bit $EXP_NAME/cityscapes/
-ln -s `pwd`/cityscapes/gtFine $EXP_NAME/cityscapes/
+#IOUNET_NAME=cityscapes_iouconf_hce2_1_concatInput_concatNet_dl #_more #_newspade
+#IOUNET_NAME=cityscapes_conf_hce2_1_concatInput_concatNet_dl #_more #_newspade
+IOUNET_NAME=cityscapes_iou_hce2_1_concatInput_concatNet_dl #_more #_newspade
+#IOUNET_NAME=cityscapes_iouconf_hce2_1_baseline_dl #_newspade
+#ln -s `pwd`/cityscapes/leftImg8bit $EXP_NAME/cityscapes/
+#ln -s `pwd`/cityscapes/gtFine $EXP_NAME/cityscapes/
 #IOUNET_NAME=cityscapes_iouconf_hce2_1_concatInput_concatNet_dl_reproduce
 #IOUNET_NAME=cityscapes_iouconf_hce2_1_baseline_dl
 #bash train_fcn.sh 1
@@ -33,7 +43,7 @@ ln -s `pwd`/cityscapes/gtFine $EXP_NAME/cityscapes/
 #bash eval_spade.sh 2 $EXP_NAME 200 train  &
 #bash eval_spade.sh 3 $EXP_NAME 200 test &
 #wait
-bash train_iounet.sh 3 $EXP_NAME $IOUNET_NAME $REC_PATH
-bash eval_iounet.sh 3 $EXP_NAME $IOUNET_NAME $REC_PATH
+#bash train_iounet.sh 3 $EXP_NAME $IOUNET_NAME $REC_PATH
+bash eval_iounet.sh 2 $EXP_NAME $IOUNET_NAME $REC_PATH
 
 

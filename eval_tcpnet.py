@@ -13,6 +13,7 @@ from PIL import Image
 from options.iounet_options import BaseOptions
 
 from models.fcn8_self_confid import VGG16_FCN8s_SelfConfid
+from models.deeplab_self_confid import Deeplab_SelfConfid
 import anom_utils
 from metric import Metrics
 import data
@@ -105,6 +106,7 @@ def main():
     #net = IOUwConfNet(num_cls=opt.label_nc)
 
     net = VGG16_FCN8s_SelfConfid(num_cls=opt.label_nc, pretrained=False)
+    #net = Deeplab_SelfConfid(num_classes=opt.label_nc, init_weights=None, restore_from=None, phase='train')
     net.load_state_dict(torch.load(opt.model_path, map_location='cuda:{}'.format(opt.gpu_ids[0])))
     net.eval()
     net.cuda()
@@ -155,8 +157,13 @@ def main():
         #tensor_max = torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
         #tensor_min = -1.0 * torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
         #conf = tensor_max * correct_map + tensor_min * (1 - correct_map)
-        #conf = conf + max_prob
+        conf = conf + max_prob
         #conf = max_prob
+        res = eval_ood_measure(conf.cpu().numpy(), pred.cpu().numpy(), label_map.cpu().numpy(), mask=None)
+        if res is not None:
+            auroc, aupr, fpr = res
+            aurocs.append(auroc); auprs.append(aupr), fprs.append(fpr)
+
         metrics.update(pred.long(), label_map.long(), conf)
         #metrics.update(pred.long(), label_map.long(), max_prob)
 
@@ -177,6 +184,7 @@ def main():
         #os.makedirs(opt.metric_pred_dir, exist_ok=True)
         #with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
         #    json.dump(metric, f)
+    print(" mean fpr = ", np.mean(fprs))
     scores = metrics.get_scores(split="val")
     logs_dict = {}
     for s in scores:

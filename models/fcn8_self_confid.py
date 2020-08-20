@@ -146,9 +146,9 @@ class VGG16_FCN8s_SelfConfid(nn.Module):
         upscore8 = self.upscore8(fuse_pool3)
         score = _crop(upscore8, input, offset=31)
 
-        pool4up = torch.nn.functional.interpolate(pool4, (hi, wi), mode='bilinear')
-        pool3up = torch.nn.functional.interpolate(pool3, (hi, wi), mode='bilinear')
-        last_ft_up = torch.nn.functional.interpolate(self.reduce_dim(last_ft), (hi, wi), mode='bilinear')
+        pool4up = torch.nn.functional.interpolate(pool4, (hi, wi), mode='bilinear', align_corners=False)
+        pool3up = torch.nn.functional.interpolate(pool3, (hi, wi), mode='bilinear', align_corners=False)
+        last_ft_up = torch.nn.functional.interpolate(self.reduce_dim(last_ft), (hi, wi), mode='bilinear', align_corners=False)
         uncertainty = self.uncertainty(torch.cat((pool3up, pool4up, last_ft_up), dim=1))
 
         if self.output_last_ft:

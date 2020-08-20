@@ -141,13 +141,19 @@ def main():
         max_prob = max_prob[label_map != 19]
         label_map = label_map[label_map != 19]
 
+        res = eval_ood_measure(conf.cpu().numpy(), pred.cpu().numpy(), label_map.cpu().numpy(), mask=None)
+        if res is not None:
+            auroc, aupr, fpr = res
+            aurocs.append(auroc); auprs.append(aupr), fprs.append(fpr)
 
         #correct_map = (pred.long() == label_map.long()).float()
         #tensor_max = torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
         #tensor_min = -1.0 * torch.abs((conf-max_prob) / 2) + torch.abs((conf + max_prob) / 2)
         #conf = tensor_max * correct_map + tensor_min * (1 - correct_map)
         #conf = conf + max_prob
+
         metrics.update(pred.long(), label_map.long(), conf)
+
         #metrics.update(pred.long(), label_map.long(), max_prob)
 
 
@@ -155,12 +161,16 @@ def main():
         #os.makedirs(conf_dir, exist_ok=True)
         #np.savez_compressed(os.path.join(conf_dir, os.path.basename(data_i['image_src_path'][0])),
         #                    conf=conf[0].cpu().numpy(), prob=prob[0].cpu().numpy(), label=label_map[0].cpu().numpy())
+    print(" mean fpr = ", np.mean(fprs))
 
+    #'''
     scores = metrics.get_scores(split="val")
     logs_dict = {}
     for s in scores:
         logs_dict[s] = scores[s]
     print(logs_dict)
+
+    #'''
 
 if __name__ == '__main__':
     main()

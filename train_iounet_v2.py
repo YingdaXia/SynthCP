@@ -99,14 +99,16 @@ while True:
         # backward pass
         loss = loss_iou + loss_conf
         loss.backward()
+        #pdb.set_trace()
+        #print(pred_iou.grad.mean())
 
         # step gradients
         optimizer.step()
 
         # log results
         if iteration % 10 == 0:
-            #print('Iteration {}:\tiou loss: {} \tconf loss: {}'.format(iteration, loss_iou.item(), loss_conf.item()))
-            print('Iteration {}:\tiou loss: {} '.format(iteration, loss_iou.item()))
+            print('Iteration {}:\tiou loss: {} \tconf loss: {}'.format(iteration, loss_iou.item(), loss_conf.item()))
+            #print('Iteration {}:\tiou loss: {} '.format(iteration, loss_iou.item()))
         iteration += 1
 
         if iteration % opt.snapshot == 0:

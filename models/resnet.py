@@ -315,7 +315,7 @@ class IOUwConfNet(nn.Module):
         # predict confidence
         ft_cat = []
         for ft1, ft2, ft_conv in zip(ft, ft_rec, self.ft_convs):
-            ft_cat.append(nn.functional.interpolate(ft_conv( torch.cat((ft1, ft2), dim=1)), size=(w,h), mode='bilinear'))
+            ft_cat.append(nn.functional.interpolate(ft_conv( torch.cat((ft1, ft2), dim=1)), size=(w,h), mode='bilinear', align_corners=False))
         #ft_cat.append(self.pred_conv(pred))
         conf = self.conf(torch.cat(ft_cat, dim=1))
         conf = nn.Sigmoid()(conf)
@@ -366,7 +366,7 @@ class IOUwConfNetBaseline(nn.Module):
         # predict confidence
         ft_cat = []
         for ft1, ft_conv in zip(ft, self.ft_convs):
-            ft_cat.append(nn.functional.interpolate(ft_conv(ft1), size=(w,h), mode='bilinear'))
+            ft_cat.append(nn.functional.interpolate(ft_conv(ft1), size=(w,h), mode='bilinear', align_corners=False))
         #ft_cat.append(self.pred_conv(pred))
         conf = self.conf(torch.cat(ft_cat, dim=1))
         conf = nn.Sigmoid()(conf)

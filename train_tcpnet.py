@@ -13,6 +13,7 @@ from PIL import Image
 from options.iounet_options import BaseOptions
 
 from models.fcn8_self_confid import VGG16_FCN8s_SelfConfid
+from models.deeplab_self_confid import Deeplab_SelfConfid
 import data
 import pdb
 
@@ -82,6 +83,7 @@ print(' '.join(sys.argv))
 # load the dataset
 dataloader = data.create_dataloader(opt)
 
+#net = Deeplab_SelfConfid(num_classes=opt.label_nc, init_weights=None, restore_from=None, phase='train')
 net = VGG16_FCN8s_SelfConfid(num_cls=opt.label_nc, pretrained=False)
 net.load_state_dict(torch.load(opt.model_path), strict=False)
 net.cuda()

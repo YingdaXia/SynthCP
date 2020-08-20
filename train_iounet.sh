@@ -14,6 +14,6 @@ python train_iounet_v2.py --name $IOUNET_NAME --dataset_mode iou \
                 --vgg_norm \
                 --batchSize 4 \
                 --lr 2e-4 \
-                --niter 20000 \
-                --snapshot 5000 \
+                --niter 40000 \
+                --snapshot 2000 \
                 --gpu_ids $GPUs --nThreads 8

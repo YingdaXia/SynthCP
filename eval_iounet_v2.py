@@ -94,6 +94,8 @@ def eval_alarm_metrics(pred_ious, real_ious):
 def main():
     # parse options
     opt = BaseOptions().parse()
+    out_path = osp.join(osp.dirname(opt.iou_dir), 'conf_aupr_maxprob')
+    os.makedirs(out_path, exist_ok=True)
 
     # print options to help debugging
     print(' '.join(sys.argv))
@@ -139,6 +141,9 @@ def main():
         with torch.no_grad():
             pred_iou, conf = net(prob, im_src, im_rec)
 
+
+        max_prob_to_save = max_prob.cpu().numpy()
+        conf_to_save = conf.squeeze(0).cpu().numpy()
         len_steps += 1 * 256 * 512
         len_data += 1
 
@@ -155,8 +160,20 @@ def main():
         #conf = tensor_max * correct_map + tensor_min * (1 - correct_map)
         conf = conf + max_prob
         #conf = max_prob
-        metrics.update(pred.long(), label_map.long(), conf)
         #metrics.update(pred.long(), label_map.long(), max_prob)
+
+        #res = eval_ood_measure(max_prob.cpu().numpy(), pred.cpu().numpy(), label_map.cpu().numpy(), mask=None)
+        res = eval_ood_measure(conf.cpu().numpy(), pred.cpu().numpy(), label_map.cpu().numpy(), mask=None)
+        if res is not None:
+            auroc, aupr, fpr = res
+            aurocs.append(auroc); auprs.append(aupr), fprs.append(fpr)
+
+
+        res_msp = eval_ood_measure(max_prob.cpu().numpy(), pred.cpu().numpy(), label_map.cpu().numpy(), mask=None)
+        if res is not None:
+            auroc_msp, aupr_msp, fpr_msp = res_msp
+        metrics.update(pred.long(), label_map.long(), conf)
+
 
         valid=data_i['valid'][0].cpu().numpy()
         real_iou_valid = iou_label[0].cpu().numpy() / 100
@@ -175,14 +192,24 @@ def main():
         #os.makedirs(opt.metric_pred_dir, exist_ok=True)
         #with open(os.path.join(opt.metric_pred_dir, os.path.splitext(os.path.basename(data_i['image_src_path'][0]))[0] + '.json'), 'w') as f:
         #    json.dump(metric, f)
+
+        # Things to save for visualization: conf_to_save, max_prob_to_save, aupr, aupr_msp
+        case_name = osp.splitext(osp.basename(data_i['image_src_path'][0]))[0]
+        #with open(osp.join(out_path, case_name+'.pkl'), 'wb') as f:
+        #    pickle.dump(dict(conf=conf_to_save, max_prob=max_prob_to_save, aupr=aupr, aupr_msp=aupr_msp), f)
+
+    #'''
+    print(" mean fpr = ", np.mean(fprs))
     scores = metrics.get_scores(split="val")
     logs_dict = {}
     for s in scores:
         logs_dict[s] = scores[s]
     print(logs_dict)
 
-    with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
-        pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
+    #'''
+
+    #with open(osp.join(osp.dirname(opt.model_path), 'iou_pred_iter{}.pkl'.format(opt.eval_iter)), 'wb') as f:
+    #    pickle.dump({'pred_ious':pred_ious, 'real_ious':real_ious}, f)
 
     eval_alarm_metrics(pred_ious, real_ious)
 

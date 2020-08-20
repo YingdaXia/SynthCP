@@ -1,12 +1,12 @@
 GPUs=$1
 eval_output_dir=$2
 IOUNET_NAME=$3
-for iter in {22000..28000..2000}
+for iter in {5000..40000..5000}
 do
 echo $iter
 python eval_tcpnet.py --name cityscapes --dataset_mode iou \
                 --phase test --n_fold 0 \
-                --dataroot ./cityscapes \
+                --dataroot ./$eval_output_dir/cityscapes \
                 --image_src_dir ./$eval_output_dir/cityscapes/leftImg8bitResize/val \
                 --image_rec_dir ./$eval_output_dir/cityscapes/leftImg8bitRec/val \
                 --iou_dir ./$eval_output_dir/metrics_val \
