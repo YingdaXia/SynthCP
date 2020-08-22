@@ -1,6 +1,6 @@
 # Synthesize then Compare: Detecting Failures and Anomalies for Semantic Segmentation
 
-### [Project page](https://) |   [Paper](https://arxiv.org/pdf/2003.08440.pdf) | [Video](https://) 
+### [Project page](#) |   [Paper](https://arxiv.org/pdf/2003.08440.pdf) | [Video](#) 
 
 Synthesize then Compare: Detecting Failures and Anomalies for Semantic Segmentation <br>
 [Yingda Xia*](https://yingdaxia.xyz),  [Yi Zhang*](https://edz-o.github.io), [Fengze Liu](https://scholar.google.com/citations?user=T3EjsaAAAAAJ&hl=en), [Wei Shen](http://wei-shen.weebly.com/), and [Alan Yuille](https://www.cs.jhu.edu/~ayuille/).<br>
@@ -25,7 +25,7 @@ Download Cityscapes [dataset](https://www.cityscapes-dataset.com/) and place it 
 
 ## Running the code
 
-First, download our checkpoint models from [here](#) and name the folder as `checkpoints/'. You should have a structure like this,
+First, download our checkpoint models from [here](https://www.cs.jhu.edu/~yzh/synthcp_failure_checkpoints.zip) and name the folder as `checkpoints/'. You should have a structure like this,
 
 ```
 checkpoints/

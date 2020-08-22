@@ -6,11 +6,11 @@ IOUNET_NAME=synthcp_fcn_joint
 IOUNET_MODEL_PATH=checkpoints/iounet/$IOUNET_NAME/iter20000.pth
 
 # SynthCP-separate image-level
-#IOUNET_NAME=synthcp_fcn_image-level 
+#IOUNET_NAME=synthcp_fcn_image-level
 #IOUNET_MODEL_PATH=checkpoints/iounet/$IOUNET_NAME/iter44000.pth
 
 # SynthCP-separate pixel-level
-#IOUNET_NAME=synthcp_fcn_pixel-level 
+#IOUNET_NAME=synthcp_fcn_pixel-level
 #IOUNET_MODEL_PATH=checkpoints/iounet/$IOUNET_NAME/iter28000.pth
 
 # Direct Prediction
@@ -26,7 +26,7 @@ ln -s `pwd`/datasets/cityscapes/gtFine $EXP_PATH/cityscapes/
 
 # Run synthesize module to obtain reconstructions
 # bash scripts/eval_spade.sh 2 $EXP_PATH 50 $REC_PATH train &
-bash scripts/eval_spade.sh 3 $EXP_PATH 50 $REC_PATH test &
+#bash scripts/eval_spade.sh 0 $EXP_PATH 50 $REC_PATH test &
 wait
 
 # Train comparison module
