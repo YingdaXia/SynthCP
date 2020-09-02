@@ -22,8 +22,9 @@ pip install -r requirements.txt
 ## Dataset Preparation
 
 Download Cityscapes [dataset](https://www.cityscapes-dataset.com/) and place it under `datasets/`
+Download StreetHards dataset following this [repo](https://github.com/hendrycks/anomaly-seg)
 
-## Running the code
+## Running the code on the Cityscpaes
 
 First, download our checkpoint models from [here](https://www.cs.jhu.edu/~yzh/synthcp_failure_checkpoints.zip) and name the folder as `checkpoints/'. You should have a structure like this,
 
@@ -52,7 +53,14 @@ Then run the scripts we provided to obtain numbers.
 
 ### Training 
 
-To train SynthCP, you need to first train the segmentation models using cross-validation on Cityscapes training set, 
+To train the synthesize module (SPADE), use the following script:
+```bash
+cd spade-cityscapes
+bash run.sh
+```
+We also provide our pre-trained SPADE only on the label-image pairs.
+
+To train the comparison module, you need to first train the segmentation models using cross-validation on Cityscapes training set, 
 
 ```bash
 bash scripts/train_segmentation_models.sh
@@ -71,6 +79,31 @@ bash scripts/train_iounet.sh 0 $EXP_PATH $IOUNET_NAME $REC_PATH
 ```
 
 Similar process for Direct Prediction, image-level MCDropout and TCP.
+
+## Running the code on StreetHazards dataset
+
+First, train and test segmentation model to obtain segmentation predictions.
+```
+cd anomaly
+python train.py
+python test.py
+```
+
+Then, train the synthesize module (SPADE).
+```
+cd spade-caos
+bash run.sh
+```
+And use it to obtain reconstructions of the segmentation predictions
+```bash
+bash eval_spade.sh
+```
+
+Finally, segment anomaly objects by computing a feature-space distance between the images and the reconstructions.
+```
+cd anomaly
+python eval_ood_rec.py
+```
 
 ### Citation
 If you use this code for your research, please cite our papers.

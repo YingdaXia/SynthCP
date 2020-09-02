@@ -9,3 +9,5 @@ results/
 *local.py
 *local.sh
 metrics*/
+__pycache__/
+*.pyc

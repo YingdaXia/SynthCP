@@ -5,3 +5,7 @@ dill
 scikit-image
 click
 tqdm
+numpy
+scipy
+yacs
+tqdm

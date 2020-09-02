@@ -1,0 +1,27 @@
+DATASET:
+  root_dataset: "/mnt/sdd/yingda/data/alarmseg/caos/test"
+  rec_dataset: "/mnt/sdd/yingda/data/alarmseg/caos/results/test_predrec"
+  list_val: "/mnt/sdd/yingda/data/alarmseg/caos/test/test.odgt"
+  num_class: 150
+  imgSizes: (300, 375, 450, 525, 600)
+  imgMaxSize: 1000
+  padding_constant: 8
+  segm_downsampling_rate: 8
+  random_flip: False
+
+MODEL:
+  arch_encoder: "resnet50dilated"
+  arch_decoder: "ppm_deepsup"
+  fc_dim: 2048
+
+
+VAL:
+  visualize: False
+  checkpoint: "epoch_20.pth"
+
+TEST:
+  checkpoint: "epoch_20.pth"
+  result: "./"
+
+#DIR: "ckpt/ood_net"
+DIR: "ckpt/ade20k-resnet50dilated-ppm_deepsup"
