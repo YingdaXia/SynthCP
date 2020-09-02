@@ -1,5 +1,5 @@
 python train.py --name caos --dataset_mode caos \
-                --dataroot /PATH/TO/CAOS/DATASET \
+                --dataroot /PATH/TO/DATAROOT \
                 --label_nc 13 --no_instance \
                 --niter 100 --niter_decay 100 \
                 --batchSize 12 \

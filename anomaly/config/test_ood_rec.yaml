@@ -1,7 +1,7 @@
 DATASET:
-  root_dataset: "/mnt/sdd/yingda/data/alarmseg/caos/test"
-  rec_dataset: "/mnt/sdd/yingda/data/alarmseg/caos/results/test_predrec"
-  list_val: "/mnt/sdd/yingda/data/alarmseg/caos/test/test.odgt"
+  root_dataset: "/PATH/TO/DATAROOT/test"
+  rec_dataset: "/PATH/TO/RECONSTRUCTION"
+  list_val: "/PATH/TO/DATAROOT/test/test.odgt"
   num_class: 150
   imgSizes: (300, 375, 450, 525, 600)
   imgMaxSize: 1000
@@ -23,5 +23,4 @@ TEST:
   checkpoint: "epoch_20.pth"
   result: "./"
 
-#DIR: "ckpt/ood_net"
 DIR: "ckpt/ade20k-resnet50dilated-ppm_deepsup"
