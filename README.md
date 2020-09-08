@@ -60,7 +60,7 @@ To train the synthesize module (SPADE), use the following script:
 cd spade-cityscapes
 bash run.sh
 ```
-We provided our pre-trained SPADE (on the label-image pairs) in the previous checkpoints.
+We provided our pre-trained SPADE (on the label-image pairs) in ```checkpoints/cityscapes_label_only_c19/```.
 
 To train the comparison module, you need to first train the segmentation models using cross-validation on Cityscapes training set, 
 

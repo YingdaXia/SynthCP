@@ -6,4 +6,4 @@ python eval_ae.py --name caos --dataset_mode caos \
                 --rec_save_path ../anomaly/data/test_recon\
                 --eval_spade \
                 --nThread 16 \
-                --gpu_ids [GPU_IDS] \
+                --gpu_ids 0 \
