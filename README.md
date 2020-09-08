@@ -118,4 +118,4 @@ If you use this code for your research, please cite our papers.
 ```
 
 ## Acknowledgments
-This code borrows heavily from SPADE. 
+The code for training and testing the synthesize module is extended from [SPADE](https://github.com/nvlabs/spade/). The code for anomaly segmentation is extended from [anomaly-seg](https://github.com/hendrycks/anomaly-seg).
