@@ -10,8 +10,8 @@ In ECCV 2020 (Oral).
 
 Clone this repo.
 ```bash
-git clone https://github.com/XXXXX/XXXXX.git
-cd XXXXX/
+git clone https://github.com/YingdaXia/SynthCP.git
+cd SynthCP
 ```
 
 This code has been tested with PyTorch 1.2.0 and python 3.7. Please install dependencies by
