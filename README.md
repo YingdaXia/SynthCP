@@ -120,4 +120,4 @@ If you use this code for your research, please cite our papers.
 ```
 
 ## Acknowledgments
-The code for training and testing the synthesize module is extended from [SPADE](https://github.com/nvlabs/spade/). The code for anomaly segmentation is extended from [anomaly-seg](https://github.com/hendrycks/anomaly-seg).
+The code for training and testing the synthesize module is extended from [SPADE](https://github.com/nvlabs/spade/) (Copyright (C) 2019 NVIDIA Corporation). The code for anomaly segmentation is extended from [anomaly-seg](https://github.com/hendrycks/anomaly-seg).
