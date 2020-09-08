@@ -1,8 +1,8 @@
 python train.py --name caos --dataset_mode caos \
-                --dataroot /PATH/TO/DATAROOT \
+                --dataroot ../anomaly/data/ \
                 --label_nc 13 --no_instance \
                 --niter 100 --niter_decay 100 \
-                --batchSize 12 \
+                --batchSize 16 \
                 --nThread 15 \
-                --gpu_ids YOUR_GPU_IDs \
+                --gpu_ids 0,1,2,3 \
                 --no_html --tf_log

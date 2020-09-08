@@ -35,6 +35,7 @@ checkpoints/
   |----deeplab/
   |----iounet/
   |----cityscapes_label_only_c19/
+  |----caos/
 ```
 
 ### Obtaining paper results
@@ -59,7 +60,7 @@ To train the synthesize module (SPADE), use the following script:
 cd spade-cityscapes
 bash run.sh
 ```
-We also provide our pre-trained SPADE only on the label-image pairs.
+We provided our pre-trained SPADE (on the label-image pairs) in the previous checkpoints.
 
 To train the comparison module, you need to first train the segmentation models using cross-validation on Cityscapes training set, 
 
@@ -90,7 +91,7 @@ python train.py
 python test.py
 ```
 
-Then, train the synthesize module (SPADE). Please modify your GPU settings in the bash file.
+Then, train the synthesize module (SPADE). 
 ```
 cd ../spade-caos
 bash run.sh
@@ -99,6 +100,7 @@ And use it to obtain reconstructions of the segmentation predictions (saved in `
 ```bash
 bash eval_spade.sh
 ```
+We also provided our trained model in ```checkpoints/caos```. If you want to use it, please copy it to ```spade-caos/checkpoints/caos```.
 
 Finally, segment anomaly objects by computing a feature-space distance between the images and the reconstructions.
 ```
