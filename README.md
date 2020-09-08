@@ -21,7 +21,8 @@ pip install -r requirements.txt
 
 ## Dataset Preparation
 
-Download Cityscapes [dataset](https://www.cityscapes-dataset.com/) and place it under `datasets/`
+Download Cityscapes [dataset](https://www.cityscapes-dataset.com/) and place it under `datasets/`.
+
 Download StreetHards dataset following this [repo](https://github.com/hendrycks/anomaly-seg). Please download both train and test data, and arrange them as ```anomaly/data/train``` and ```anomaly/data/test``` respectively.
 
 ## Running the code on the Cityscpaes
