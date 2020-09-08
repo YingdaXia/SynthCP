@@ -22,7 +22,7 @@ pip install -r requirements.txt
 ## Dataset Preparation
 
 Download Cityscapes [dataset](https://www.cityscapes-dataset.com/) and place it under `datasets/`
-Download StreetHards dataset following this [repo](https://github.com/hendrycks/anomaly-seg)
+Download StreetHards dataset following this [repo](https://github.com/hendrycks/anomaly-seg). Please download both train and test data, and arrange them as ```anomaly/data/train``` and ```anomaly/data/test``` respectively.
 
 ## Running the code on the Cityscpaes
 
@@ -82,26 +82,26 @@ Similar process for Direct Prediction, image-level MCDropout and TCP.
 
 ## Running the code on StreetHazards dataset
 
-First, train and test segmentation model to obtain segmentation predictions.
+First, train and test segmentation model to obtain segmentation predictions (saved in ```anomaly/data/test_result``` by default).
 ```
 cd anomaly
 python train.py
 python test.py
 ```
 
-Then, train the synthesize module (SPADE).
+Then, train the synthesize module (SPADE). Please modify your GPU settings in the bash file.
 ```
-cd spade-caos
+cd ../spade-caos
 bash run.sh
 ```
-And use it to obtain reconstructions of the segmentation predictions
+And use it to obtain reconstructions of the segmentation predictions (saved in ```anomaly/data/test_recon``` by default).
 ```bash
 bash eval_spade.sh
 ```
 
 Finally, segment anomaly objects by computing a feature-space distance between the images and the reconstructions.
 ```
-cd anomaly
+cd ../anomaly
 python eval_ood_rec.py
 ```
 

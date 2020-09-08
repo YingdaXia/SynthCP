@@ -1,6 +1,6 @@
 DATASET:
-  root_dataset: "/PATH/TO/RECONSTRUCTION/test"
-  list_val: "/PATH/TO/RECONSTRUCTION/test/test.odgt"
+  root_dataset: "./data/test"
+  list_val: "./data/test/test.odgt"
   num_class: 150
   imgSizes: (300, 375, 450, 525, 600)
   imgMaxSize: 1000
@@ -36,6 +36,6 @@ VAL:
 
 TEST:
   checkpoint: "epoch_20.pth"
-  result: "/PATH/TO/TEST/RESULTS"
+  result: "./data/test_result"
 
 DIR: "ckpt/ade20k-resnet50dilated-ppm_deepsup"

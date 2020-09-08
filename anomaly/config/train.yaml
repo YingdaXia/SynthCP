@@ -1,7 +1,7 @@
 DATASET:
-  root_dataset: "/PATH/TO/DATAROOT/train"
-  list_train: "/PATH/TO/DATAROOT/train/train.odgt"
-  list_val: "/PATH/TO/DATAROOT/test.odgt"
+  root_dataset: "./data/train"
+  list_train: "./data/train/train.odgt"
+  list_val: "./data/test.odgt"
   num_class: 150
   imgSizes: (300, 375, 450, 525, 600)
   imgMaxSize: 1000
