@@ -69,8 +69,6 @@ def evaluate(segmentation_module, loader, loader_rec, cfg, gpu):
     segmentation_module.eval()
 
     aurocs, auprs, fprs = [], [], []
-    log_dir = './temp_vis/logs_name.txt'
-    f_conf = open(log_dir, 'w')
 
     pbar = tqdm(total=len(loader))
     for batch_data, rec_data in zip(loader, loader_rec):
@@ -147,9 +145,6 @@ def evaluate(segmentation_module, loader, loader_rec, cfg, gpu):
                 #ft_dist = torch.nn.SmoothL1Loss(reduction='none')(ft1, ft2)
                 ft_dist = nn.functional.cosine_similarity(ft1, ft2, dim=1).unsqueeze(1)
                 ft_dist = nn.functional.interpolate(ft_dist, size=segSize, mode='bilinear', align_corners=False)[0,0].cpu()
-                #os.makedirs(os.path.join('./temp_vis/results', img_folder), exist_ok=True)
-                #np.savez(os.path.join('./temp_vis/results', img_folder, img_name), ft_dist=ft_dist.numpy(), msp=msp.numpy())
-                #conf_rec = 1 - ft_dist / ft_dist.max()
                 conf_rec = ft_dist
                 t = 0.999
                 conf = msp * (msp > t).float() + conf_rec * (msp <= t).float()
@@ -170,8 +165,6 @@ def evaluate(segmentation_module, loader, loader_rec, cfg, gpu):
                 #aurocs.append(auroc); auprs.append(aupr), fprs.append(fpr)
             else:
                 pass
-
-            f_conf.write("%s %.4f %.4f\n" % (full_name, aupr1, aupr))
 
 
         torch.cuda.synchronize()
