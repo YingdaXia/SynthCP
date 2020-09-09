@@ -26,7 +26,7 @@ ln -s `pwd`/datasets/cityscapes/gtFine $EXP_PATH/cityscapes/
 
 # Run synthesize module to obtain reconstructions
 # bash scripts/eval_spade.sh 2 $EXP_PATH 50 $REC_PATH train &
-#bash scripts/eval_spade.sh 0 $EXP_PATH 50 $REC_PATH test &
+bash scripts/eval_spade.sh 0 $EXP_PATH 50 $REC_PATH test &
 wait
 
 # Train comparison module
