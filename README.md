@@ -36,6 +36,7 @@ checkpoints/
   |----iounet/
   |----cityscapes_label_only_c19/
   |----caos/
+  |----caos-segmentation/
 ```
 
 ### Obtaining paper results
@@ -90,6 +91,7 @@ cd anomaly
 python train.py
 python test.py
 ```
+We provided our trained segmentation model in ```checkpoints/caos-segmentation```. 
 
 Then, train the synthesize module (SPADE). 
 ```
@@ -100,7 +102,7 @@ And use it to obtain reconstructions of the segmentation predictions (saved in `
 ```bash
 bash eval_spade.sh
 ```
-We also provided our trained model in ```checkpoints/caos```. If you want to use it, please copy it to ```spade-caos/checkpoints/caos```.
+We also provided our trained GAN model in ```checkpoints/caos```. If you want to use it, please copy it to ```spade-caos/checkpoints/caos```.
 
 Finally, segment anomaly objects by computing a feature-space distance between the images and the reconstructions.
 ```
